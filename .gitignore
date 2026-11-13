@@ -11,6 +11,9 @@
 # production
 /dist
 
+# local APK artifacts
+/*.apk
+
 # misc
 .DS_Store
 .env.local

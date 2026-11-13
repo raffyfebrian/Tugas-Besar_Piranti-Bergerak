@@ -2,6 +2,9 @@
 
 Prototipe aplikasi pemesanan menu café langsung dari kamar hotel, dibangun dengan **Ionic 9 + React 19 + TypeScript + Vite**, dan disiapkan untuk **Web** serta **Android (Capacitor)**.
 
+Repo: https://github.com/raffyfebrian/Tugas-Besar_Piranti-Bergerak
+
+
 Aplikasi ini mengikuti spesifikasi `penjelasan_sistem_ngoffe_id.md`:
 
 - Website publik: Beranda, Tentang, Menu, Galeri, Kontak.
@@ -119,31 +122,34 @@ android/                # proyek native Capacitor Android
 
 ## Build Android (APK)
 
-Platform Android sudah ditambahkan. Prasyarat build:
+Proyek native Capacitor ada di `android/` dan **APK debug sudah berhasil dibangun**.
 
-- **Android Studio / Android SDK** (minimal platform & build-tools), `ANDROID_HOME` diset.
-- **JDK 21** (disarankan; Android Gradle Plugin belum mendukung JDK 26).
+Prasyarat:
 
-Langkah:
+- **Node.js 20+** untuk `npm run build` dan `npx cap sync android`.
+- **JDK 21** — Android Gradle Plugin 8.13 belum mendukung JDK 26.
+- **Android SDK**: `platforms;android-36`, `build-tools;36.0.0`, `platform-tools`.
+- File `android/local.properties` berisi `sdk.dir=<path Android SDK>`.
+
+Langkah build:
 
 ```bash
 npm run build
 npx cap sync android
-npx cap open android
+cd android
+./gradlew.bat assembleDebug
 ```
 
-Di Android Studio: **Build → Build Bundle(s) / APK(s) → Build APK(s)**.
+Hasil: `android/app/build/outputs/apk/debug/app-debug.apk` (APK debug, ditandatangani debug key, siap di-sideload).
 
-Atau lewat CLI (Windows):
+Install ke perangkat/emulator yang terhubung:
 
 ```powershell
-cd android
-.\gradlew.bat assembleDebug
+adb install -r ngoffe-id-debug.apk
 ```
 
-Hasil: `android/app/build/outputs/apk/debug/app-debug.apk`.
-
-> Pada mesin ini APK belum dibangun karena Android SDK/Android Studio belum terpasang dan hanya tersedia JDK 26.
+> APK debug juga disalin ke root proyek sebagai `ngoffe-id-debug.apk` untuk memudahkan pemakaian.
+> Untuk Play Store, perlu build `assembleRelease`/AAB dengan keystore release tersendiri.
 
 ---
 

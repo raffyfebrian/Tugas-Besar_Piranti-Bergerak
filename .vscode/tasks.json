@@ -1,0 +1,69 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Ionic: Install dependencies",
+      "detail": "Jalankan sekali setelah clone / setiap package.json berubah",
+      "type": "shell",
+      "command": "npm install",
+      "problemMatcher": []
+    },
+    {
+      "label": "Ionic: Jalankan aplikasi (dev server)",
+      "detail": "Vite dev server di http://localhost:5173",
+      "type": "shell",
+      "command": "npm run dev",
+      "isBackground": true,
+      "problemMatcher": [],
+      "group": { "kind": "build", "isDefault": true },
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "Ionic: Serve via Ionic CLI",
+      "detail": "Alternatif: npx ionic serve",
+      "type": "shell",
+      "command": "npx ionic serve",
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "Ionic: Build produksi",
+      "type": "shell",
+      "command": "npm run build",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Ionic: Lint",
+      "type": "shell",
+      "command": "npm run lint",
+      "problemMatcher": ["$eslint-stylish", "$tsc"]
+    },
+    {
+      "label": "Ionic: Unit test",
+      "type": "shell",
+      "command": "npm run test:unit",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: Sync aset web",
+      "type": "shell",
+      "command": "npm run android:sync",
+      "problemMatcher": []
+    },
+    {
+      "label": "Android: Build APK debug",
+      "detail": "Butuh JDK 21 + Android SDK 36 (lihat README)",
+      "type": "shell",
+      "command": "npm run android:apk",
+      "options": {
+        "env": {
+          "JAVA_HOME": "${env:LOCALAPPDATA}\\Android\\jdk-21",
+          "ANDROID_HOME": "${env:LOCALAPPDATA}\\Android\\Sdk",
+          "ANDROID_SDK_ROOT": "${env:LOCALAPPDATA}\\Android\\Sdk"
+        }
+      },
+      "problemMatcher": []
+    }
+  ]
+}

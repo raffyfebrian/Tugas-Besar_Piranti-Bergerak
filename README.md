@@ -32,6 +32,28 @@ npm run dev
 
 Buka `http://localhost:5173`.
 
+### Jalankan lewat VS Code
+
+1. Buka folder proyek: **File → Open Folder**.
+2. Buka terminal: **Terminal → New Terminal**.
+3. Jalankan:
+
+   ```powershell
+   npm install
+   npm run dev
+   ```
+
+   Alternatif memakai Ionic CLI: `npm run ionic:serve`.
+
+4. Atau pakai task siap pakai lewat **Terminal → Run Task**:
+   - `Ionic: Install dependencies`
+   - `Ionic: Jalankan aplikasi (dev server)` (default `Ctrl+Shift+B`)
+   - `Ionic: Serve via Ionic CLI`
+   - `Ionic: Build produksi`, `Ionic: Lint`, `Ionic: Unit test`
+   - `Android: Sync aset web`, `Android: Build APK debug`
+
+Ekstensi yang disarankan akan muncul otomatis: ESLint, Prettier, Webnative (Ionic), Vitest, dan Playwright.
+
 Perintah lain:
 
 ```bash

@@ -2,9 +2,11 @@ import { IonButton, IonIcon } from '@ionic/react';
 import { arrowForwardOutline, cafeOutline, qrCodeOutline } from 'ionicons/icons';
 import React from 'react';
 
+import { CountUp } from '../../components/CountUp';
 import { MenuCard } from '../../components/MenuCard';
 import { PublicShell } from '../../components/PublicShell';
 import { useApp } from '../../store/AppStore';
+import { averageDeliveryMinutes } from '../../utils/format';
 
 const STEPS = [
   { title: 'Scan QR Kamar', text: 'Arahkan kamera ke QR code yang ada di kamar hotel.' },
@@ -17,6 +19,9 @@ const STEPS = [
 const Home: React.FC = () => {
   const { state } = useApp();
   const featured = state.menu.filter((item) => item.available).slice(0, 4);
+  const menuTotal = state.menu.length;
+  const activeRooms = state.rooms.filter((room) => room.active).length;
+  const deliveryMinutes = averageDeliveryMinutes(state.orders) ?? 12;
 
   return (
     <PublicShell active="/">
@@ -45,15 +50,21 @@ const Home: React.FC = () => {
             </div>
             <div className="hero-trust">
               <div>
-                <strong>18+</strong>
+                <strong>
+                  <CountUp value={menuTotal} />
+                </strong>
                 <span>Menu pilihan</span>
               </div>
               <div>
-                <strong>15</strong>
+                <strong>
+                  <CountUp value={activeRooms} />
+                </strong>
                 <span>Kamar terhubung</span>
               </div>
               <div>
-                <strong>12 mnt</strong>
+                <strong>
+                  <CountUp value={deliveryMinutes} format={(value) => `${value} mnt`} />
+                </strong>
                 <span>Rata-rata antar</span>
               </div>
             </div>

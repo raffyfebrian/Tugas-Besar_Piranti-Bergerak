@@ -8,7 +8,9 @@ import { GuestShell } from '../../components/GuestShell';
 import { MenuCard } from '../../components/MenuCard';
 import { useApp } from '../../store/AppStore';
 import type { MenuCategory } from '../../types';
+import { flyToCart } from '../../utils/flyToCart';
 import { rupiah } from '../../utils/format';
+import { tapFeedback } from '../../utils/native';
 
 const CATEGORIES: ('Semua' | MenuCategory)[] = ['Semua', 'Kopi', 'Non-Kopi', 'Makanan', 'Camilan'];
 
@@ -95,7 +97,11 @@ const OrderMenu: React.FC = () => {
                     <button
                       type="button"
                       className="round-add"
-                      onClick={() => addToCart(item.id)}
+                      onClick={(event) => {
+                        addToCart(item.id);
+                        void tapFeedback();
+                        flyToCart(event.currentTarget);
+                      }}
                       disabled={!item.available}
                       aria-label={`Tambah ${item.name}`}
                     >

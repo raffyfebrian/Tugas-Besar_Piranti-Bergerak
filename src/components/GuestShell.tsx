@@ -53,7 +53,12 @@ export const GuestShell: React.FC<GuestShellProps> = ({
               <IonIcon slot="icon-only" icon={homeOutline} />
             </IonButton>
             {showCart && (
-              <IonButton fill="clear" onClick={() => router.push('/order/cart')} aria-label="Keranjang">
+              <IonButton
+                fill="clear"
+                onClick={() => router.push('/order/cart')}
+                aria-label="Keranjang"
+                data-cart-target
+              >
                 <IonIcon slot="icon-only" icon={cartOutline} />
                 {cartCount > 0 && (
                   <IonBadge color="danger" className="cart-badge-pop" key={cartCount}>

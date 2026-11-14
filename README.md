@@ -13,9 +13,11 @@ Aplikasi ini mengikuti spesifikasi `penjelasan_sistem_ngoffe_id.md`:
 - Nomor pesanan otomatis dengan format `NGF-YYYYMMDD-0001`.
 - Workspace staf: **Kasir**, **Kitchen**, **Admin** dengan hak akses berbeda.
 - Tema hijau menyeluruh: hijau pinus, mint lembut, dan aksen hijau segar (status peringatan/batal tetap berwarna agar mudah dibedakan).
-- Sinkronisasi pesanan antar-tab (tamu, kasir, dapur) tanpa reload, plus notifikasi suara di meja kasir.
+- Sinkronisasi pesanan antar-tab (tamu, kasir, dapur) tanpa reload, plus notifikasi suara di meja kasir dan dapur.
 - QR kamar asli yang dapat dipindai dan lembar cetak QR untuk semua kamar.
 - Timer SLA dapur dan animasi mikro pada menu, keranjang, serta timeline status.
+- Perilaku khas aplikasi Android: tombol **back** kembali ke halaman sebelumnya, status bar hijau, dan **getaran haptik** saat menambah keranjang atau memvalidasi pesanan.
+- Animasi mikro tambahan: **fly-to-cart**, angka KPI **count-up**, dan kartu pesanan masuk berurutan (stagger).
 
 > Catatan: prototipe ini **tanpa backend**. Seluruh data disimpan di `localStorage` browser (`ngoffe-ionic-state-v1`) dan sudah berisi data demo.
 
@@ -172,6 +174,19 @@ adb install -r ngoffe-id-debug.apk
 
 > APK debug juga disalin ke root proyek sebagai `ngoffe-id-debug.apk` untuk memudahkan pemakaian.
 > Untuk Play Store, perlu build `assembleRelease`/AAB dengan keystore release tersendiri.
+
+### Perilaku native (Capacitor)
+
+Semua panggilan native dibungkus `Capacitor.isNativePlatform()` di `src/utils/native.ts`, sehingga web tetap berjalan normal tanpa error.
+
+| Fitur | Perilaku |
+| --- | --- |
+| Tombol back Android | Menutup modal/alert yang terbuka lebih dulu, lalu kembali ke halaman sebelumnya; baru keluar aplikasi di halaman akar. |
+| Status bar | Gaya ikon terang dengan latar hijau pinus `#1f5c45` (sama dengan `theme-color`), tidak menimpa konten (non-overlay). |
+| Haptics | Getaran ringan saat menambah/mengurangi jumlah, getaran sukses saat pesanan divalidasi/selesai. |
+| Suara dapur | Kitchen ikut berbunyi saat ada pesanan baru masuk antrean; preferensi **Suara Aktif/Mati** dibagi bersama kasir (`ngoffe-sound`). |
+
+Animasi mikro memakai Web Animations API + CSS (`src/utils/flyToCart.ts`, `src/components/CountUp.tsx`) dan otomatis dinonaktifkan saat pengguna mengaktifkan *reduce motion*.
 
 ---
 

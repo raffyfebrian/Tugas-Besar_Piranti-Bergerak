@@ -7,6 +7,7 @@ import { FakeQr } from '../../components/FakeQr';
 import { GuestShell } from '../../components/GuestShell';
 import { useApp } from '../../store/AppStore';
 import { paymentLabel, rupiah } from '../../utils/format';
+import { successFeedback } from '../../utils/native';
 
 const Payment: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -88,6 +89,7 @@ const Payment: React.FC = () => {
         position: 'top',
       });
     }
+    void successFeedback();
     router.push(`/order/status/${order.id}`);
   };
 

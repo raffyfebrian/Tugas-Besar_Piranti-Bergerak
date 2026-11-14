@@ -14,6 +14,7 @@ import {
 } from 'ionicons/icons';
 import React from 'react';
 
+import { CountUp } from '../../components/CountUp';
 import { StaffShell } from '../../components/StaffShell';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useApp } from '../../store/AppStore';
@@ -116,7 +117,7 @@ const AdminDashboard: React.FC = () => {
           </div>
           <div className="kpi-label">Pendapatan Hari Ini</div>
           <div className="kpi-value" style={{ fontSize: '1.2rem' }}>
-            {rupiah(revenueToday)}
+            <CountUp value={revenueToday} format={rupiah} />
           </div>
           <div className="kpi-note">{paidToday.length} transaksi tervalidasi</div>
         </div>
@@ -125,7 +126,9 @@ const AdminDashboard: React.FC = () => {
             <IonIcon icon={receiptOutline} />
           </div>
           <div className="kpi-label">Pesanan Hari Ini</div>
-          <div className="kpi-value">{todayOrders.length}</div>
+          <div className="kpi-value">
+            <CountUp value={todayOrders.length} />
+          </div>
           <div className="kpi-note">{itemsSold} item terjual</div>
         </div>
         <div className="kpi-card">
@@ -133,7 +136,9 @@ const AdminDashboard: React.FC = () => {
             <IonIcon icon={timeOutline} />
           </div>
           <div className="kpi-label">Pesanan Aktif</div>
-          <div className="kpi-value">{activeOrders.length}</div>
+          <div className="kpi-value">
+            <CountUp value={activeOrders.length} />
+          </div>
           <div className="kpi-note">Diproses &amp; menunggu validasi</div>
         </div>
         <div className="kpi-card">
@@ -142,7 +147,7 @@ const AdminDashboard: React.FC = () => {
           </div>
           <div className="kpi-label">Rata-rata Pesanan</div>
           <div className="kpi-value" style={{ fontSize: '1.2rem' }}>
-            {rupiah(avgOrder)}
+            <CountUp value={avgOrder} format={rupiah} />
           </div>
           <div className="kpi-note">Per transaksi hari ini</div>
         </div>

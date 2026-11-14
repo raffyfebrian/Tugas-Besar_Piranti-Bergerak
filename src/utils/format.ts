@@ -88,3 +88,23 @@ export const roleHome: Record<Role, string> = {
 };
 
 export const orderItemCount = (order: Order): number => order.items.reduce((total, item) => total + item.qty, 0);
+
+/**
+ * Rata-rata durasi dari pesanan mulai diproses dapur sampai diantar/selesai.
+ * Mengembalikan null bila belum ada pesanan yang tuntas, sehingga UI bisa
+ * memakai estimasi awal alih-alih menampilkan angka palsu.
+ */
+export const averageDeliveryMinutes = (orders: Order[]): number | null => {
+  const durations = orders
+    .map((order) => {
+      const started = order.timeline.find((entry) => entry.status === 'diproses')?.at ?? order.createdAt;
+      const finished = order.timeline.find((entry) => entry.status === 'diantar' || entry.status === 'selesai')?.at;
+      if (!finished) return null;
+      const minutes = (new Date(finished).getTime() - new Date(started).getTime()) / 60000;
+      return minutes > 0 && minutes < 180 ? minutes : null;
+    })
+    .filter((minutes): minutes is number => minutes !== null);
+
+  if (!durations.length) return null;
+  return Math.round(durations.reduce((total, minutes) => total + minutes, 0) / durations.length);
+};

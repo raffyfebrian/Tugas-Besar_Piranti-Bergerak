@@ -1,13 +1,15 @@
-import { IonButton, IonIcon } from '@ionic/react';
+import { IonButton, IonIcon, useIonToast } from '@ionic/react';
 import {
   checkmarkCircleOutline,
   cubeOutline,
   flameOutline,
   timeOutline,
   timerOutline,
+  volumeHighOutline,
+  volumeMuteOutline,
   warningOutline,
 } from 'ionicons/icons';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 import { EmptyState } from '../../components/EmptyState';
@@ -16,6 +18,8 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { useApp } from '../../store/AppStore';
 import type { Order } from '../../types';
 import { isToday, statusLabel, timeAgo } from '../../utils/format';
+import { successFeedback, tapFeedback } from '../../utils/native';
+import { playOrderChime, unlockNotificationSound } from '../../utils/notify';
 
 type Tab = 'antrean' | 'siap';
 
@@ -31,13 +35,76 @@ const elapsedMinutes = (iso: string, now: number): number =>
 const Kitchen: React.FC = () => {
   const { state, setOrderStatus, adjustStock } = useApp();
   const location = useLocation();
+  const [present] = useIonToast();
   const [tab, setTab] = useState<Tab>('antrean');
   const [now, setNow] = useState(() => Date.now());
+  const [soundOn, setSoundOn] = useState(() => {
+    try {
+      return localStorage.getItem('ngoffe-sound') !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  const seenQueueRef = useRef<Set<string>>(new Set());
+  const queueWatchReadyRef = useRef(false);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 15000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    const unlock = () => {
+      if (soundOn) unlockNotificationSound();
+    };
+    window.addEventListener('pointerdown', unlock, { once: true });
+    return () => window.removeEventListener('pointerdown', unlock);
+  }, [soundOn]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ngoffe-sound', soundOn ? 'on' : 'off');
+    } catch {
+      // Preferensi suara tidak kritis bila storage diblokir.
+    }
+  }, [soundOn]);
+
+  // Dapur juga perlu mendengar pesanan baru yang baru divalidasi kasir.
+  useEffect(() => {
+    const incoming = state.orders.filter((order) => order.status === 'diproses');
+
+    if (!queueWatchReadyRef.current) {
+      incoming.forEach((order) => seenQueueRef.current.add(order.id));
+      queueWatchReadyRef.current = true;
+      return;
+    }
+
+    const fresh = incoming.filter((order) => !seenQueueRef.current.has(order.id));
+    incoming.forEach((order) => seenQueueRef.current.add(order.id));
+    if (!fresh.length) return;
+
+    if (soundOn) playOrderChime();
+    void present({
+      message:
+        fresh.length === 1
+          ? `Pesanan ${fresh[0].code} masuk antrean dapur.`
+          : `${fresh.length} pesanan baru masuk antrean dapur.`,
+      duration: 2600,
+      color: 'primary',
+      position: 'top',
+      buttons: [{ text: 'Lihat', handler: () => setTab('antrean') }],
+    });
+  }, [state.orders, present, soundOn]);
+
+  const toggleSound = () => {
+    setSoundOn((current) => {
+      if (!current) {
+        unlockNotificationSound();
+        playOrderChime();
+      }
+      return !current;
+    });
+  };
 
   const queue = state.orders
     .filter((order) => order.status === 'diproses')
@@ -68,7 +135,22 @@ const Kitchen: React.FC = () => {
   const visible = tab === 'antrean' ? queue : ready;
 
   return (
-    <StaffShell title="Antrean Dapur" subtitle="Siapkan pesanan sesuai urutan masuk dan tandai saat siap diantar.">
+    <StaffShell
+      title="Antrean Dapur"
+      subtitle="Siapkan pesanan sesuai urutan masuk dan tandai saat siap diantar."
+      actions={
+        <IonButton
+          fill="outline"
+          size="small"
+          onClick={toggleSound}
+          aria-label={soundOn ? 'Matikan suara notifikasi' : 'Aktifkan suara notifikasi'}
+          aria-pressed={soundOn}
+        >
+          <IonIcon slot="start" icon={soundOn ? volumeHighOutline : volumeMuteOutline} />
+          {soundOn ? 'Suara Aktif' : 'Suara Mati'}
+        </IonButton>
+      }
+    >
       <div className="kpi-grid" style={{ marginBottom: 16 }}>
         <div className="kpi-card">
           <div className="kpi-icon">
@@ -186,9 +268,10 @@ const Kitchen: React.FC = () => {
                     <IonButton
                       size="small"
                       color="success"
-                      onClick={() =>
-                        setOrderStatus(order.id, 'siap_diantar', 'Kitchen', 'Pesanan selesai disiapkan, siap diantar')
-                      }
+                      onClick={() => {
+                        void successFeedback();
+                        setOrderStatus(order.id, 'siap_diantar', 'Kitchen', 'Pesanan selesai disiapkan, siap diantar');
+                      }}
                     >
                       <IonIcon slot="start" icon={checkmarkCircleOutline} />
                       Tandai Siap
@@ -253,11 +336,25 @@ const Kitchen: React.FC = () => {
                   </div>
                 </div>
                 <div className="mini-stepper">
-                  <button type="button" onClick={() => adjustStock(item.id, -1)} aria-label="Kurangi stok">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void tapFeedback();
+                      adjustStock(item.id, -1);
+                    }}
+                    aria-label="Kurangi stok"
+                  >
                     −
                   </button>
                   <IonIcon icon={cubeOutline} color="medium" />
-                  <button type="button" onClick={() => adjustStock(item.id, 1)} aria-label="Tambah stok">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void tapFeedback();
+                      adjustStock(item.id, 1);
+                    }}
+                    aria-label="Tambah stok"
+                  >
                     +
                   </button>
                 </div>

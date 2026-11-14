@@ -2,6 +2,8 @@ import { IonIcon } from '@ionic/react';
 import { add, remove } from 'ionicons/icons';
 import React, { useMemo } from 'react';
 
+import { tapFeedback } from '../utils/native';
+
 interface FakeQrProps {
   seed: string;
   size?: number;
@@ -62,13 +64,28 @@ export const QtyStepper: React.FC<{
   min?: number;
 }> = ({ qty, onAdd, onRemove, min = 0 }) => (
   <div className="qty-control">
-    <button type="button" onClick={onRemove} disabled={qty <= min} aria-label="Kurangi jumlah">
+    <button
+      type="button"
+      onClick={() => {
+        void tapFeedback();
+        onRemove();
+      }}
+      disabled={qty <= min}
+      aria-label="Kurangi jumlah"
+    >
       <IonIcon icon={remove} />
     </button>
     <span className="qty-value" key={qty} aria-live="polite">
       {qty}
     </span>
-    <button type="button" onClick={onAdd} aria-label="Tambah jumlah">
+    <button
+      type="button"
+      onClick={() => {
+        void tapFeedback();
+        onAdd();
+      }}
+      aria-label="Tambah jumlah"
+    >
       <IonIcon icon={add} />
     </button>
   </div>

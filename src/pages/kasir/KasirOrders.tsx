@@ -12,6 +12,7 @@ import {
 } from 'ionicons/icons';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 
+import { CountUp } from '../../components/CountUp';
 import { EmptyState } from '../../components/EmptyState';
 import { StaffShell } from '../../components/StaffShell';
 import { StatusBadge } from '../../components/StatusBadge';
@@ -149,7 +150,9 @@ const KasirOrders: React.FC = () => {
             {needValidation > 0 && <span className="kpi-live-dot" aria-hidden="true" />}
           </div>
           <div className="kpi-label">Perlu Validasi</div>
-          <div className="kpi-value">{needValidation}</div>
+          <div className="kpi-value">
+            <CountUp value={needValidation} />
+          </div>
           <div className="kpi-note">QRIS / cash menunggu kasir</div>
         </div>
         <div className="kpi-card">
@@ -157,7 +160,9 @@ const KasirOrders: React.FC = () => {
             <IonIcon icon={flameOutline} />
           </div>
           <div className="kpi-label">Diproses</div>
-          <div className="kpi-value">{processing}</div>
+          <div className="kpi-value">
+            <CountUp value={processing} />
+          </div>
           <div className="kpi-note">Sedang disiapkan dapur</div>
         </div>
         <div className="kpi-card">
@@ -165,7 +170,9 @@ const KasirOrders: React.FC = () => {
             <IonIcon icon={checkmarkDoneOutline} />
           </div>
           <div className="kpi-label">Siap Antar</div>
-          <div className="kpi-value">{ready}</div>
+          <div className="kpi-value">
+            <CountUp value={ready} />
+          </div>
           <div className="kpi-note">Menunggu diantar ke kamar</div>
         </div>
         <div className="kpi-card">
@@ -174,7 +181,7 @@ const KasirOrders: React.FC = () => {
           </div>
           <div className="kpi-label">Pendapatan Hari Ini</div>
           <div className="kpi-value" style={{ fontSize: '1.15rem' }}>
-            {rupiah(revenue)}
+            <CountUp value={revenue} format={rupiah} />
           </div>
           <div className="kpi-note">{todayOrders.length} pesanan hari ini</div>
         </div>
@@ -199,14 +206,15 @@ const KasirOrders: React.FC = () => {
 
       {visible.length ? (
         <div className="stack">
-          {visible.map((order) => (
+          {visible.map((order, index) => (
             <div
-              className="order-card"
+              className="order-card fade-up"
               data-status={order.status}
               key={order.id}
               onClick={() => router.push(`/staff/kasir/order/${order.id}`)}
               role="button"
               tabIndex={0}
+              style={{ animationDelay: `${Math.min(index, 10) * 40}ms` }}
             >
               <div className="row-between wrap">
                 <div>

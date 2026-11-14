@@ -1,3 +1,4 @@
+import { ImpactStyle } from '@capacitor/haptics';
 import { IonButton, IonIcon, IonToast, useIonAlert, useIonRouter } from '@ionic/react';
 import {
   arrowBackOutline,
@@ -16,6 +17,7 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { useApp } from '../../store/AppStore';
 import type { OrderStatus } from '../../types';
 import { formatDateTime, paymentLabel, rupiah, statusLabel } from '../../utils/format';
+import { successFeedback, tapFeedback } from '../../utils/native';
 
 const KasirOrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -43,6 +45,11 @@ const KasirOrderDetail: React.FC = () => {
   const update = (status: OrderStatus, note: string, message: string) => {
     setOrderStatus(order.id, status, 'Kasir', note);
     setToast(message);
+    if (status === 'siap_diantar' || status === 'selesai') {
+      void successFeedback();
+    } else {
+      void tapFeedback(ImpactStyle.Medium);
+    }
   };
 
   const confirmCancel = () => {

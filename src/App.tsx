@@ -30,6 +30,7 @@ import Login from './pages/staff/Login';
 import { AppProvider, useApp } from './store/AppStore';
 import type { Role } from './types';
 import { roleHome } from './utils/format';
+import { setupNativeShell } from './utils/native';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';
@@ -193,10 +194,18 @@ const Routes: React.FC = () => (
   </IonReactRouter>
 );
 
+/** Memasang perilaku native (status bar, tombol back Android) sekali saat aplikasi dimuat. */
+const NativeShell: React.FC<React.PropsWithChildren> = ({ children }) => {
+  React.useEffect(() => setupNativeShell(), []);
+  return <>{children}</>;
+};
+
 const App: React.FC = () => (
   <IonApp>
     <AppProvider>
-      <Routes />
+      <NativeShell>
+        <Routes />
+      </NativeShell>
     </AppProvider>
   </IonApp>
 );

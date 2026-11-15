@@ -3,6 +3,7 @@ import { IonReactRouter } from '@ionic/react-router';
 import React from 'react';
 import { Navigate, Route } from 'react-router-dom';
 
+import DeepLinkBridge from './components/DeepLinkBridge';
 import { PublicMenu } from './components/PublicMenu';
 import { StaffMenu } from './components/StaffMenu';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -71,6 +72,7 @@ const RequireRole: React.FC<RequireRoleProps> = ({ roles, children }) => {
 
 const Routes: React.FC = () => (
   <IonReactRouter>
+    <DeepLinkBridge />
     <IonRouterOutlet id="main">
       {/* ===== Website publik ===== */}
       <Route path="/" element={<PublicHome />} />

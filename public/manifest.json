@@ -1,15 +1,31 @@
 {
   "short_name": "Ngoffe ID",
   "name": "Ngoffe ID — Café & Hotel",
+  "description": "Pemesanan menu café langsung dari kamar hotel lewat QR code. QRIS & cash, antar ke kamar.",
   "icons": [
     {
       "src": "favicon.png",
-      "sizes": "64x64 32x32 24x24 16x16",
+      "sizes": "64x64",
       "type": "image/png"
+    },
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "start_url": ".",
+  "scope": ".",
   "display": "standalone",
+  "orientation": "portrait",
+  "lang": "id",
   "theme_color": "#1f5c45",
-  "background_color": "#f3f8f4"
+  "background_color": "#1f5c45"
 }

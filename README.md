@@ -15,9 +15,13 @@ Aplikasi ini mengikuti spesifikasi `penjelasan_sistem_ngoffe_id.md`:
 - Tema hijau menyeluruh: hijau pinus, mint lembut, dan aksen hijau segar (status peringatan/batal tetap berwarna agar mudah dibedakan).
 - Sinkronisasi pesanan antar-tab (tamu, kasir, dapur) tanpa reload, plus notifikasi suara di meja kasir dan dapur.
 - QR kamar asli yang dapat dipindai dan lembar cetak QR untuk semua kamar.
+- QR kamar memakai **deep link aplikasi** (`ngoffe://order?room=NNN`) sehingga memindai QR di HP yang sudah memasang APK langsung membuka aplikasi dengan kamar terisi.
+- Ikon launcher, splash screen, dan favicon **brand Ngoffe ID** (hijau pinus + cangkir kopi), dibuat ulang lewat skrip lokal.
 - Timer SLA dapur dan animasi mikro pada menu, keranjang, serta timeline status.
 - Perilaku khas aplikasi Android: tombol **back** kembali ke halaman sebelumnya, status bar hijau, dan **getaran haptik** saat menambah keranjang atau memvalidasi pesanan.
 - Animasi mikro tambahan: **fly-to-cart**, angka KPI **count-up**, dan kartu pesanan masuk berurutan (stagger).
+- **Bagikan struk** dari detail pesanan kasir lewat dialog berbagi Android/Web Share, dengan fallback salin ke clipboard.
+- **Layar dapur tetap menyala** memakai Screen Wake Lock API selama antrean dipantau.
 
 > Catatan: prototipe ini **tanpa backend**. Seluruh data disimpan di `localStorage` browser (`ngoffe-ionic-state-v1`) dan sudah berisi data demo.
 
@@ -63,6 +67,7 @@ npm run build       # build produksi ke dist/
 npm run preview     # pratinjau hasil build
 npm run test:unit   # unit test (Vitest)
 npm run lint        # ESLint + Prettier check
+npm run assets:brand # buat ulang ikon, splash, dan favicon Ngoffe ID
 ```
 
 Jika Node tidak terpasang global di mesin ini, gunakan Node portabel:
@@ -185,14 +190,34 @@ Semua panggilan native dibungkus `Capacitor.isNativePlatform()` di `src/utils/na
 | Status bar | Gaya ikon terang dengan latar hijau pinus `#1f5c45` (sama dengan `theme-color`), tidak menimpa konten (non-overlay). |
 | Haptics | Getaran ringan saat menambah/mengurangi jumlah, getaran sukses saat pesanan divalidasi/selesai. |
 | Suara dapur | Kitchen ikut berbunyi saat ada pesanan baru masuk antrean; preferensi **Suara Aktif/Mati** dibagi bersama kasir (`ngoffe-sound`). |
+| Bagikan struk | Tombol **Bagikan** di panel Struk Digital memakai `@capacitor/share` (dialog berbagi Android), lalu `navigator.share`, lalu salin ke clipboard. |
+| Layar dapur | Screen Wake Lock API menahan layar tetap menyala selama halaman Kitchen aktif; preferensi disimpan di `ngoffe-keep-awake`. |
 
 Animasi mikro memakai Web Animations API + CSS (`src/utils/flyToCart.ts`, `src/components/CountUp.tsx`) dan otomatis dinonaktifkan saat pengguna mengaktifkan *reduce motion*.
+
+### Ikon, splash, dan deep link QR
+
+Aset brand dibuat offline dengan `System.Drawing` (tanpa `@capacitor/assets`):
+
+```powershell
+npm run assets:brand
+```
+
+Perintah ini menulis ulang `android/app/src/main/res/mipmap-*` (ikon legacy, round, foreground adaptive), seluruh `drawable-*/splash.png`, serta `public/favicon.png`, `public/icon-192.png`, `public/icon-512.png`, dan `public/apple-touch-icon.png`. Setelah itu jalankan `npx cap sync android` agar ikon/splash masuk ke APK.
+
+QR kamar di **Admin → Kamar** berisi `ngoffe://order?room=204` (skema alternatif: `id.ngoffe.cafe://order?room=204`). Intent filter `VIEW`/`BROWSABLE` sudah didaftarkan di `android/app/src/main/AndroidManifest.xml`, dan `DeepLinkBridge` meneruskan URL ke router Ionic. Uji tanpa kamera:
+
+```powershell
+adb shell am start -a android.intent.action.VIEW -d "ngoffe://order?room=204"
+```
+
+> Sebagian aplikasi kamera hanya menampilkan teks untuk skema kustom. Jika QR tidak membuka aplikasi, gunakan perintah `adb` di atas atau tombol **Buka Halaman Pesanan** di jendela QR. Untuk produksi, daftarkan App Links `https://domain/order?room=...` dengan `assetlinks.json`.
 
 ---
 
 ## Catatan prototipe
 
-- QR kamar dibuat dengan `qrcode.react` dan mengarah ke `/order?room=NNN`; bisa dipindai kamera HP dan dicetak dari **Admin → Kamar**.
+- QR kamar dibuat dengan `qrcode.react` dan berisi deep link `ngoffe://order?room=NNN`; bisa dipindai kamera HP (dengan APK terpasang) dan dicetak dari **Admin → Kamar**.
 - QRIS hanya menampilkan QR tiruan; bukti transfer disimpan sebagai **nama berkas**, bukan file gambar.
 - Data bertahan di `localStorage`. Reset lewat **Admin → Pengaturan → Reset Data Demo**.
 - Pesanan disinkronkan antar-tab lewat `BroadcastChannel` (`ngoffe-orders-sync-v1`), dengan fallback event `storage`.

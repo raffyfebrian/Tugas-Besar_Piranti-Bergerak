@@ -1,11 +1,12 @@
 import { ImpactStyle } from '@capacitor/haptics';
-import { IonButton, IonIcon, IonToast, useIonAlert, useIonRouter } from '@ionic/react';
+import { IonButton, IonIcon, IonToast, useIonAlert, useIonRouter, useIonToast } from '@ionic/react';
 import {
   arrowBackOutline,
   checkmarkCircleOutline,
   closeCircleOutline,
   printOutline,
   receiptOutline,
+  shareOutline,
   timeOutline,
   cloudUploadOutline,
 } from 'ionicons/icons';
@@ -18,12 +19,14 @@ import { useApp } from '../../store/AppStore';
 import type { OrderStatus } from '../../types';
 import { formatDateTime, paymentLabel, rupiah, statusLabel } from '../../utils/format';
 import { successFeedback, tapFeedback } from '../../utils/native';
+import { shareReceipt } from '../../utils/share';
 
 const KasirOrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { state, setOrderStatus, cancelOrder } = useApp();
   const router = useIonRouter();
   const [presentAlert] = useIonAlert();
+  const [presentToast] = useIonToast();
   const [toast, setToast] = useState('');
 
   const order = state.orders.find((item) => item.id === id);
@@ -74,6 +77,26 @@ const KasirOrderDetail: React.FC = () => {
   const canValidate = order.status === 'menunggu_validasi';
   const isCashPending = order.status === 'menunggu_pembayaran' && order.payment === 'cash';
   const isQrisPending = order.status === 'menunggu_pembayaran' && order.payment === 'qris';
+
+  const share = async () => {
+    const outcome = await shareReceipt(order, state.settings);
+    void tapFeedback();
+    if (outcome === 'cancelled') return;
+
+    const message =
+      outcome === 'shared'
+        ? 'Struk siap dibagikan.'
+        : outcome === 'copied'
+          ? 'Struk disalin. Tempel ke WhatsApp atau chat lain.'
+          : 'Struk tidak bisa dibagikan di perangkat ini.';
+
+    void presentToast({
+      message,
+      duration: 2200,
+      color: outcome === 'failed' ? 'danger' : 'success',
+      position: 'top',
+    });
+  };
 
   return (
     <StaffShell
@@ -317,10 +340,16 @@ const KasirOrderDetail: React.FC = () => {
           <div className="panel">
             <div className="row-between" style={{ marginBottom: 10 }}>
               <h3 className="panel-title mb-0">Struk Digital</h3>
-              <IonButton size="small" fill="clear" onClick={() => window.print()}>
-                <IonIcon slot="start" icon={printOutline} />
-                Print
-              </IonButton>
+              <div className="receipt-actions">
+                <IonButton size="small" fill="clear" onClick={() => void share()}>
+                  <IonIcon slot="start" icon={shareOutline} />
+                  Bagikan
+                </IonButton>
+                <IonButton size="small" fill="clear" onClick={() => window.print()}>
+                  <IonIcon slot="start" icon={printOutline} />
+                  Print
+                </IonButton>
+              </div>
             </div>
             <div className="receipt">
               <h3>{state.settings.cafeName}</h3>

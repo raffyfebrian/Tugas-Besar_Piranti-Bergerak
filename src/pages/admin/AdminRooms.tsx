@@ -24,8 +24,9 @@ import { createPortal } from 'react-dom';
 import { StaffShell } from '../../components/StaffShell';
 import { useApp } from '../../store/AppStore';
 import type { Room } from '../../types';
+import { roomDeepLink } from '../../utils/deepLink';
 
-const roomLink = (room: Room) => `${window.location.origin}/order?room=${room.number}`;
+const roomLink = (room: Room) => roomDeepLink(room.number);
 
 const emptyRoom = (): Room => ({
   id: '',
@@ -120,7 +121,7 @@ const AdminRooms: React.FC = () => {
     const link = roomLink(room);
     try {
       await navigator.clipboard.writeText(link);
-      void present({ message: 'Link pemesanan disalin.', duration: 1600, color: 'success', position: 'top' });
+      void present({ message: 'Deep link aplikasi disalin.', duration: 1600, color: 'success', position: 'top' });
     } catch {
       void present({ message: link, duration: 3000, color: 'medium', position: 'top' });
     }
@@ -266,10 +267,12 @@ const AdminRooms: React.FC = () => {
         <div className="row" style={{ gap: 10, alignItems: 'flex-start' }}>
           <span style={{ fontSize: '1.4rem' }}>💡</span>
           <div>
-            <strong className="small">QR kamar siap dipindai</strong>
+            <strong className="small">QR kamar membuka aplikasi</strong>
             <p className="muted small" style={{ margin: '4px 0 0', lineHeight: 1.55 }}>
-              QR dibuat langsung dari link <code>/order?room=nomor</code>, jadi bisa dipindai kamera HP. Gunakan tombol
-              Cetak Semua QR untuk mencetak lembar QR semua kamar aktif, atau cetak satu QR dari jendela detail kamar.
+              QR berisi deep link <code>ngoffe://order?room=nomor</code>. Saat dipindai di HP yang sudah memasang APK
+              Ngoffe ID, aplikasi langsung terbuka dengan kamar terisi. Gunakan tombol Cetak Semua QR untuk mencetak
+              lembar QR semua kamar aktif. Untuk demo tanpa kamera, jalankan{' '}
+              <code>adb shell am start -a android.intent.action.VIEW -d &quot;ngoffe://order?room=204&quot;</code>.
             </p>
           </div>
         </div>
@@ -360,15 +363,18 @@ const AdminRooms: React.FC = () => {
                 padding: '10px 12px',
                 fontSize: '.74rem',
                 wordBreak: 'break-all',
-                marginBottom: 14,
+                marginBottom: 8,
               }}
             >
               {roomLink(qrRoom)}
             </div>
+            <p className="muted small" style={{ margin: '0 0 14px' }}>
+              Scan dengan kamera HP → aplikasi Ngoffe ID terbuka dan kamar {qrRoom.number} langsung terisi.
+            </p>
             <div className="stack-sm">
               <IonButton expand="block" fill="outline" onClick={() => copyLink(qrRoom)}>
                 <IonIcon slot="start" icon={copyOutline} />
-                Salin Link
+                Salin Deep Link
               </IonButton>
               <IonButton expand="block" fill="outline" onClick={() => printQr(qrRoom)}>
                 <IonIcon slot="start" icon={printOutline} />
@@ -416,7 +422,7 @@ const AdminRooms: React.FC = () => {
                     title={`QR pemesanan kamar ${room.number}`}
                   />
                   <strong>Kamar {room.number}</strong>
-                  <span>Scan untuk memesan</span>
+                  <span>Scan untuk membuka aplikasi</span>
                   <small>{roomLink(room)}</small>
                 </article>
               ))}

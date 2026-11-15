@@ -2,6 +2,7 @@ import { IonButton, IonIcon, useIonToast } from '@ionic/react';
 import {
   checkmarkCircleOutline,
   cubeOutline,
+  eyeOutline,
   flameOutline,
   timeOutline,
   timerOutline,
@@ -15,6 +16,7 @@ import { useLocation } from 'react-router-dom';
 import { EmptyState } from '../../components/EmptyState';
 import { StaffShell } from '../../components/StaffShell';
 import { StatusBadge } from '../../components/StatusBadge';
+import { useWakeLock } from '../../hooks/useWakeLock';
 import { useApp } from '../../store/AppStore';
 import type { Order } from '../../types';
 import { isToday, statusLabel, timeAgo } from '../../utils/format';
@@ -45,6 +47,14 @@ const Kitchen: React.FC = () => {
       return true;
     }
   });
+  const [keepAwake, setKeepAwake] = useState(() => {
+    try {
+      return localStorage.getItem('ngoffe-keep-awake') !== 'off';
+    } catch {
+      return true;
+    }
+  });
+  const { supported: wakeSupported, active: wakeActive } = useWakeLock(keepAwake);
   const seenQueueRef = useRef<Set<string>>(new Set());
   const queueWatchReadyRef = useRef(false);
 
@@ -68,6 +78,14 @@ const Kitchen: React.FC = () => {
       // Preferensi suara tidak kritis bila storage diblokir.
     }
   }, [soundOn]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('ngoffe-keep-awake', keepAwake ? 'on' : 'off');
+    } catch {
+      // Preferensi layar tidak kritis bila storage diblokir.
+    }
+  }, [keepAwake]);
 
   // Dapur juga perlu mendengar pesanan baru yang baru divalidasi kasir.
   useEffect(() => {
@@ -106,6 +124,20 @@ const Kitchen: React.FC = () => {
     });
   };
 
+  const toggleKeepAwake = () => {
+    if (!keepAwake && !wakeSupported) {
+      void present({
+        message: 'Perangkat ini belum mendukung layar tetap menyala.',
+        duration: 2200,
+        color: 'warning',
+        position: 'top',
+      });
+      return;
+    }
+    void tapFeedback();
+    setKeepAwake((current) => !current);
+  };
+
   const queue = state.orders
     .filter((order) => order.status === 'diproses')
     .sort((a, b) => startedProcessingAt(a).localeCompare(startedProcessingAt(b)));
@@ -139,16 +171,29 @@ const Kitchen: React.FC = () => {
       title="Antrean Dapur"
       subtitle="Siapkan pesanan sesuai urutan masuk dan tandai saat siap diantar."
       actions={
-        <IonButton
-          fill="outline"
-          size="small"
-          onClick={toggleSound}
-          aria-label={soundOn ? 'Matikan suara notifikasi' : 'Aktifkan suara notifikasi'}
-          aria-pressed={soundOn}
-        >
-          <IonIcon slot="start" icon={soundOn ? volumeHighOutline : volumeMuteOutline} />
-          {soundOn ? 'Suara Aktif' : 'Suara Mati'}
-        </IonButton>
+        <>
+          <IonButton
+            fill={keepAwake ? 'solid' : 'outline'}
+            color={keepAwake ? 'success' : 'medium'}
+            size="small"
+            onClick={toggleKeepAwake}
+            aria-label={keepAwake ? 'Matikan layar tetap menyala' : 'Aktifkan layar tetap menyala'}
+            aria-pressed={keepAwake}
+          >
+            <IonIcon slot="start" icon={eyeOutline} />
+            {keepAwake && wakeSupported ? (wakeActive ? 'Layar Aktif' : 'Layar Menyala…') : 'Layar Normal'}
+          </IonButton>
+          <IonButton
+            fill="outline"
+            size="small"
+            onClick={toggleSound}
+            aria-label={soundOn ? 'Matikan suara notifikasi' : 'Aktifkan suara notifikasi'}
+            aria-pressed={soundOn}
+          >
+            <IonIcon slot="start" icon={soundOn ? volumeHighOutline : volumeMuteOutline} />
+            {soundOn ? 'Suara Aktif' : 'Suara Mati'}
+          </IonButton>
+        </>
       }
     >
       <div className="kpi-grid" style={{ marginBottom: 16 }}>
@@ -185,6 +230,17 @@ const Kitchen: React.FC = () => {
           <div className="kpi-note">Bahan di bawah minimum</div>
         </div>
       </div>
+
+      {keepAwake && wakeSupported && (
+        <div className={`wake-banner ${wakeActive ? 'on' : 'pending'}`} role="status">
+          <IonIcon icon={eyeOutline} />
+          <span>
+            {wakeActive
+              ? 'Layar dapur dijaga tetap menyala selama antrean dipantau.'
+              : 'Menunggu izin layar tetap menyala…'}
+          </span>
+        </div>
+      )}
 
       <div className="segmented" style={{ marginBottom: 14 }}>
         <button

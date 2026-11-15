@@ -1709,6 +1709,20 @@ a {
 }
 
 /* Receipt */
+.receipt-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+
+.receipt-actions ion-button {
+  --padding-start: 6px;
+  --padding-end: 6px;
+  margin: 0;
+}
+
 .receipt {
   background: #fff;
   border-radius: 16px;
@@ -2117,6 +2131,41 @@ a {
   background: #f8e3df;
   color: #9c3528;
   border: 1px solid rgba(191, 85, 70, 0.25);
+}
+
+.wake-banner {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 13px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+  background: #eaf6ee;
+  border: 1px solid #cfe6d8;
+  color: #1f5c45;
+}
+
+.wake-banner ion-icon {
+  font-size: 1.05rem;
+  flex: 0 0 auto;
+}
+
+.wake-banner.on::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+  background: #3f8f5f;
+  animation: livePulse 2s ease-out infinite;
+}
+
+.wake-banner.pending {
+  background: #f8f3e4;
+  border-color: #ecdfb9;
+  color: #7a5a13;
 }
 
 /* ============================================================

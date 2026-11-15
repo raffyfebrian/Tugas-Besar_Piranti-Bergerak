@@ -150,7 +150,6 @@ const Showcase3D: React.FC = () => {
             dapur kami — lalu pesan langsung ke kamar.
           </p>
           <div className="showcase3d-chips">
-            <span>CSS 3D asli</span>
             <span>Geser untuk memutar</span>
             <span>Tanpa library berat</span>
           </div>

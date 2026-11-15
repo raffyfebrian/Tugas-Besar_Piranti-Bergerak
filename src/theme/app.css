@@ -2309,6 +2309,271 @@ a {
 }
 
 /* ============================================================
+   Showcase 3D
+   ============================================================ */
+.showcase3d {
+  position: relative;
+  overflow: hidden;
+  color: #eaf6ef;
+  background:
+    radial-gradient(circle at 82% 18%, rgba(126, 214, 165, 0.22), transparent 46%),
+    radial-gradient(circle at 10% 88%, rgba(212, 175, 106, 0.14), transparent 52%),
+    linear-gradient(150deg, #0b2c21 0%, #123d2e 52%, #08251b 100%);
+  border-block: 1px solid rgba(126, 214, 165, 0.14);
+}
+
+.showcase3d::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(159, 220, 185, 0.16) 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.showcase3d-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 0.82fr 1.18fr;
+  align-items: center;
+  gap: 44px;
+  padding-block: 64px;
+}
+
+.showcase3d .section-kicker {
+  color: #9fdcb9;
+}
+
+.showcase3d-title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: clamp(2rem, 3.6vw, 3rem);
+  line-height: 1.06;
+  letter-spacing: -0.02em;
+  margin: 12px 0 14px;
+  color: #f6fbf8;
+}
+
+.showcase3d-title em {
+  font-style: normal;
+  color: #f0c987;
+}
+
+.showcase3d-copy p {
+  color: rgba(234, 246, 239, 0.72);
+  line-height: 1.65;
+  max-width: 42ch;
+  margin: 0 0 20px;
+}
+
+.showcase3d-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 26px;
+}
+
+.showcase3d-chips span {
+  padding: 7px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(159, 220, 185, 0.28);
+  background: rgba(255, 255, 255, 0.05);
+  color: #cfeadd;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.showcase3d-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.showcase3d-visual {
+  position: relative;
+  min-width: 0;
+}
+
+.showcase-stage {
+  --radius: clamp(170px, 25vw, 296px);
+  position: relative;
+  height: 400px;
+  perspective: 1500px;
+  perspective-origin: 50% 44%;
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.showcase-stage.is-dragging {
+  cursor: grabbing;
+}
+
+.showcase-floor {
+  position: absolute;
+  left: 50%;
+  bottom: 42px;
+  width: min(560px, 94%);
+  height: 170px;
+  transform: translateX(-50%) rotateX(74deg);
+  border-radius: 50%;
+  border: 1px solid rgba(159, 220, 185, 0.22);
+  background: radial-gradient(closest-side, rgba(126, 214, 165, 0.2), rgba(126, 214, 165, 0) 72%);
+  box-shadow: 0 0 60px rgba(126, 214, 165, 0.16);
+  pointer-events: none;
+}
+
+.showcase-floor::after {
+  content: '';
+  position: absolute;
+  inset: 26% 18%;
+  border-radius: 50%;
+  border: 1px dashed rgba(159, 220, 185, 0.2);
+}
+
+.showcase-ring {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.showcase-panel {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.showcase-card {
+  width: min(214px, 46vw);
+  padding: 13px 13px 16px;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #fcfffd 0%, #eef7f1 100%);
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow:
+    0 30px 60px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 #ffffff;
+  text-align: center;
+  color: #123c2d;
+}
+
+.showcase-thumb {
+  position: relative;
+  height: 96px;
+  margin-bottom: 11px;
+  border-radius: 14px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+  font-size: 2.7rem;
+}
+
+.showcase-thumb::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.5), transparent 58%);
+}
+
+.showcase-cat {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #4d7a63;
+}
+
+.showcase-card h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 1.02rem;
+  line-height: 1.22;
+  margin: 3px 0 7px;
+  color: #10362a;
+}
+
+.showcase-price {
+  font-size: 0.84rem;
+  font-weight: 800;
+  color: #1f5c45;
+}
+
+.showcase-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.showcase-controls ion-button {
+  --border-radius: 50%;
+  --border-color: rgba(159, 220, 185, 0.32);
+  --color: #d9f0e4;
+  margin: 0;
+}
+
+.showcase-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.73rem;
+  letter-spacing: 0.04em;
+  color: rgba(234, 246, 239, 0.6);
+}
+
+.showcase-hint ion-icon {
+  font-size: 1rem;
+}
+
+@media (max-width: 980px) {
+  .showcase3d-inner {
+    grid-template-columns: 1fr;
+    gap: 18px;
+    padding-block: 46px;
+  }
+  .showcase3d-copy {
+    max-width: 620px;
+  }
+  .showcase-stage {
+    --radius: clamp(170px, 34vw, 250px);
+    height: 360px;
+    perspective: 1200px;
+  }
+}
+
+@media (max-width: 640px) {
+  .showcase3d-inner {
+    padding-block: 38px;
+  }
+  .showcase-stage {
+    --radius: clamp(168px, 44vw, 210px);
+    height: 320px;
+  }
+  .showcase-card {
+    width: min(180px, 46vw);
+    padding: 10px 10px 13px;
+  }
+  .showcase-thumb {
+    height: 76px;
+    font-size: 2.2rem;
+  }
+  .showcase-card h3 {
+    font-size: 0.92rem;
+  }
+  .showcase-floor {
+    height: 130px;
+    bottom: 30px;
+  }
+}
+
+/* ============================================================
    Kurangi gerak bila diminta pengguna
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {

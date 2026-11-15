@@ -5,6 +5,7 @@ import React from 'react';
 import { CountUp } from '../../components/CountUp';
 import { MenuCard } from '../../components/MenuCard';
 import { PublicShell } from '../../components/PublicShell';
+import Showcase3D from '../../components/Showcase3D';
 import { useApp } from '../../store/AppStore';
 import { averageDeliveryMinutes } from '../../utils/format';
 
@@ -117,6 +118,8 @@ const Home: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <Showcase3D />
 
       <section className="section container">
         <div className="section-head">

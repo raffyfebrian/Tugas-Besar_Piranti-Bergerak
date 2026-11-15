@@ -22,6 +22,7 @@ Aplikasi ini mengikuti spesifikasi `penjelasan_sistem_ngoffe_id.md`:
 - Animasi mikro tambahan: **fly-to-cart**, angka KPI **count-up**, dan kartu pesanan masuk berurutan (stagger).
 - **Bagikan struk** dari detail pesanan kasir lewat dialog berbagi Android/Web Share, dengan fallback salin ke clipboard.
 - **Layar dapur tetap menyala** memakai Screen Wake Lock API selama antrean dipantau.
+- **Showcase 3D di beranda**: karusel menu signature berputar dalam ruang 3D, bisa digeser (mouse/sentuh) dengan inersia, tombol putar, dan auto-rotate yang berhenti saat kursor di atas panggung.
 
 > Catatan: prototipe ini **tanpa backend**. Seluruh data disimpan di `localStorage` browser (`ngoffe-ionic-state-v1`) dan sudah berisi data demo.
 
@@ -194,6 +195,8 @@ Semua panggilan native dibungkus `Capacitor.isNativePlatform()` di `src/utils/na
 | Layar dapur | Screen Wake Lock API menahan layar tetap menyala selama halaman Kitchen aktif; preferensi disimpan di `ngoffe-keep-awake`. |
 
 Animasi mikro memakai Web Animations API + CSS (`src/utils/flyToCart.ts`, `src/components/CountUp.tsx`) dan otomatis dinonaktifkan saat pengguna mengaktifkan *reduce motion*.
+
+Showcase 3D beranda (`src/components/Showcase3D.tsx`) dibangun murni dengan CSS `transform-style: preserve-3d` + `requestAnimationFrame`, tanpa library 3D tambahan. Enam kartu disusun melingkar (`rotateY` + `translateZ`), opacity tiap kartu dihitung dari sudutnya agar kedalaman terasa, dan auto-rotate berhenti saat kursor berada di panggung atau saat *reduce motion* aktif. Menu dipilih lewat `pickSignatureItems` supaya tiap kategori terwakili.
 
 ### Ikon, splash, dan deep link QR
 

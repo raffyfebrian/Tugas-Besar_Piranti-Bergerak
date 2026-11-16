@@ -234,7 +234,23 @@ const GuestOrderStatus: React.FC = () => {
             lineHeight: 1.55,
           }}
         >
-          {order.cancelReason ? `Alasan: ${order.cancelReason}` : statusHint[order.status]}
+          {order.cancelReason ? (
+            <>
+              Alasan: {order.cancelReason}
+              {order.refundAmount ? (
+                <>
+                  {' '}
+                  • Refund {rupiah(order.refundAmount)}
+                  {order.refundMethod && order.refundMethod !== 'none'
+                    ? ` via ${order.refundMethod.toUpperCase()}`
+                    : ''}{' '}
+                  akan diproses kasir.
+                </>
+              ) : null}
+            </>
+          ) : (
+            statusHint[order.status]
+          )}
         </div>
       </div>
 

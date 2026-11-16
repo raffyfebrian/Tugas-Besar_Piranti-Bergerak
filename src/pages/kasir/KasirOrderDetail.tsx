@@ -1,12 +1,15 @@
 import { ImpactStyle } from '@capacitor/haptics';
-import { IonButton, IonIcon, IonToast, useIonAlert, useIonRouter, useIonToast } from '@ionic/react';
+import { IonButton, IonIcon, IonInput, IonModal, IonTextarea, IonToast, useIonRouter, useIonToast } from '@ionic/react';
 import {
   arrowBackOutline,
+  banOutline,
+  cashOutline,
   checkmarkCircleOutline,
   closeCircleOutline,
   printOutline,
   receiptOutline,
   shareOutline,
+  shieldCheckmarkOutline,
   timeOutline,
   cloudUploadOutline,
 } from 'ionicons/icons';
@@ -16,18 +19,21 @@ import { useParams } from 'react-router-dom';
 import { StaffShell } from '../../components/StaffShell';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useApp } from '../../store/AppStore';
-import type { OrderStatus } from '../../types';
+import type { OrderStatus, RefundMethod } from '../../types';
 import { formatDateTime, paymentLabel, rupiah, statusLabel } from '../../utils/format';
 import { successFeedback, tapFeedback } from '../../utils/native';
 import { shareReceipt } from '../../utils/share';
 
 const KasirOrderDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const { state, setOrderStatus, cancelOrder } = useApp();
+  const { state, setOrderStatus, voidOrder } = useApp();
   const router = useIonRouter();
-  const [presentAlert] = useIonAlert();
   const [presentToast] = useIonToast();
   const [toast, setToast] = useState('');
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [voidReason, setVoidReason] = useState('');
+  const [refundMethod, setRefundMethod] = useState<RefundMethod>('none');
+  const [refundAmount, setRefundAmount] = useState(0);
 
   const order = state.orders.find((item) => item.id === id);
 
@@ -55,24 +61,41 @@ const KasirOrderDetail: React.FC = () => {
     }
   };
 
-  const confirmCancel = () => {
-    void presentAlert({
-      header: 'Batalkan pesanan?',
-      message: 'Pesanan akan dibatalkan dan tamu melihat status Dibatalkan.',
-      inputs: [{ name: 'reason', type: 'textarea', placeholder: 'Alasan pembatalan' }],
-      buttons: [
-        { text: 'Tidak', role: 'cancel' },
-        {
-          text: 'Batalkan',
-          role: 'destructive',
-          handler: (data) => {
-            cancelOrder(order.id, data?.reason || 'Dibatalkan oleh kasir', 'Kasir');
-            setToast('Pesanan dibatalkan.');
-          },
-        },
-      ],
-    });
+  const openVoid = () => {
+    const paid = order.status !== 'menunggu_pembayaran';
+    setVoidReason('');
+    setRefundMethod(paid ? order.payment : 'none');
+    setRefundAmount(paid ? order.total : 0);
+    void tapFeedback(ImpactStyle.Medium);
+    setVoidOpen(true);
   };
+
+  const submitVoid = () => {
+    if (!voidReason.trim()) {
+      void presentToast({
+        message: 'Alasan void/refund wajib diisi agar tercatat di audit trail.',
+        duration: 2400,
+        color: 'warning',
+        position: 'top',
+      });
+      return;
+    }
+    voidOrder(order.id, {
+      reason: voidReason,
+      by: 'Kasir',
+      refund: refundMethod,
+      amount: refundMethod === 'none' ? 0 : refundAmount,
+    });
+    void successFeedback();
+    setVoidOpen(false);
+    setToast(
+      refundMethod === 'none'
+        ? 'Pesanan di-void dan tercatat di audit trail.'
+        : `Refund ${rupiah(refundAmount)} dicatat di audit trail.`,
+    );
+  };
+
+  const audits = state.audits.filter((entry) => entry.orderId === order.id);
 
   const canValidate = order.status === 'menunggu_validasi';
   const isCashPending = order.status === 'menunggu_pembayaran' && order.payment === 'cash';
@@ -280,9 +303,10 @@ const KasirOrderDetail: React.FC = () => {
                 </div>
               )}
 
-              {order.status !== 'selesai' && order.status !== 'dibatalkan' && (
-                <IonButton expand="block" fill="clear" color="danger" onClick={confirmCancel}>
-                  Batalkan Pesanan
+              {order.status !== 'dibatalkan' && (
+                <IonButton expand="block" fill="clear" color="danger" onClick={openVoid}>
+                  <IonIcon slot="start" icon={banOutline} />
+                  Void / Refund Pesanan
                 </IonButton>
               )}
 
@@ -315,6 +339,37 @@ const KasirOrderDetail: React.FC = () => {
               ))}
             </div>
           </div>
+
+          {audits.length > 0 && (
+            <div className="panel">
+              <div className="row-between wrap" style={{ marginBottom: 10 }}>
+                <h3 className="panel-title mb-0">Audit Void / Refund</h3>
+                <span className="badge-soft danger">{audits.length} catatan</span>
+              </div>
+              <div className="audit-list">
+                {audits.map((entry) => (
+                  <div className="audit-row" key={entry.id}>
+                    <span className={`audit-icon ${entry.action}`}>
+                      <IonIcon icon={entry.action === 'refund' ? cashOutline : shieldCheckmarkOutline} />
+                    </span>
+                    <div className="grow">
+                      <strong className="small">
+                        {entry.action === 'refund'
+                          ? `Refund ${rupiah(entry.amount)} (${entry.method.toUpperCase()})`
+                          : 'Void tanpa refund'}
+                      </strong>
+                      <div className="muted small">
+                        {formatDateTime(entry.at)} • {entry.by}
+                      </div>
+                      <p className="muted small" style={{ margin: '4px 0 0' }}>
+                        Alasan: {entry.reason}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="stack">
@@ -402,6 +457,18 @@ const KasirOrderDetail: React.FC = () => {
                 <span>Status</span>
                 <span>{statusLabel[order.status]}</span>
               </div>
+              {order.status === 'dibatalkan' && (
+                <>
+                  <div className="receipt-line" />
+                  <div className="receipt-void">
+                    VOID{order.refundAmount ? ` — REFUND ${rupiah(order.refundAmount)}` : ''}
+                  </div>
+                  {order.voidReason && <div className="receipt-center">Alasan: {order.voidReason}</div>}
+                  {order.refundMethod && order.refundMethod !== 'none' && (
+                    <div className="receipt-center">Refund via {order.refundMethod.toUpperCase()}</div>
+                  )}
+                </>
+              )}
               <div className="receipt-line" />
               <div className="receipt-center">
                 Terima kasih telah memesan.
@@ -425,6 +492,96 @@ const KasirOrderDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <IonModal isOpen={voidOpen} onDidDismiss={() => setVoidOpen(false)} className="modal-sheet">
+        <div className="modal-body">
+          <div className="row" style={{ gap: 10, marginBottom: 4 }}>
+            <span className="pay-icon danger">
+              <IonIcon icon={banOutline} />
+            </span>
+            <div>
+              <h3 className="panel-title mb-0">Void / Refund</h3>
+              <div className="muted small">
+                {order.code} • {rupiah(order.total)}
+              </div>
+            </div>
+          </div>
+
+          <p className="muted small" style={{ margin: '10px 0 14px', lineHeight: 1.55 }}>
+            Pesanan akan ditandai <strong>Dibatalkan</strong>. Bahan yang sudah terpakai dapur dikembalikan ke stok, dan
+            aksi ini tercatat permanen di audit trail.
+          </p>
+
+          <label className="field-label" htmlFor="void-reason">
+            Alasan void / refund <span className="required">*</span>
+          </label>
+          <IonTextarea
+            id="void-reason"
+            className="field-input"
+            autoGrow
+            rows={3}
+            placeholder="Contoh: tamu salah pesan, bahan habis, pembayaran ganda"
+            value={voidReason}
+            onIonInput={(event) => setVoidReason(event.detail.value ?? '')}
+          />
+
+          <div className="field-label" style={{ marginTop: 16 }}>
+            Refund
+          </div>
+          <div className="chip-options">
+            {(
+              [
+                { key: 'none', label: 'Tanpa refund' },
+                { key: 'cash', label: 'Cash' },
+                { key: 'qris', label: 'QRIS' },
+              ] as { key: RefundMethod; label: string }[]
+            ).map((option) => (
+              <button
+                type="button"
+                key={option.key}
+                className={`chip-option ${refundMethod === option.key ? 'active' : ''}`}
+                onClick={() => {
+                  setRefundMethod(option.key);
+                  setRefundAmount(option.key === 'none' ? 0 : order.total);
+                }}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+
+          {refundMethod !== 'none' && (
+            <>
+              <label className="field-label" htmlFor="refund-amount" style={{ marginTop: 16 }}>
+                Nominal refund
+              </label>
+              <IonInput
+                id="refund-amount"
+                className="field-input"
+                type="number"
+                inputmode="numeric"
+                min={0}
+                max={order.total}
+                value={refundAmount}
+                onIonInput={(event) => setRefundAmount(Math.max(0, Number(event.detail.value ?? 0)))}
+              />
+              <div className="muted small" style={{ marginTop: 6 }}>
+                Maksimal {rupiah(order.total)}.
+              </div>
+            </>
+          )}
+
+          <div className="row" style={{ gap: 10, marginTop: 22 }}>
+            <IonButton expand="block" fill="outline" color="medium" onClick={() => setVoidOpen(false)}>
+              Batal
+            </IonButton>
+            <IonButton expand="block" color="danger" disabled={!voidReason.trim()} onClick={submitVoid}>
+              <IonIcon slot="start" icon={shieldCheckmarkOutline} />
+              Catat Void
+            </IonButton>
+          </div>
+        </div>
+      </IonModal>
 
       <IonToast
         isOpen={Boolean(toast)}

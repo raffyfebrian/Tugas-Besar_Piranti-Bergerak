@@ -136,6 +136,10 @@ const KasirOrders: React.FC = () => {
             <IonIcon slot="start" icon={statsChartOutline} />
             Transaksi
           </IonButton>
+          <IonButton fill="outline" size="small" routerLink="/staff/kasir/shift">
+            <IonIcon slot="start" icon={walletOutline} />
+            Shift
+          </IonButton>
           <IonButton size="small" routerLink="/staff/kasir?refresh=1" onClick={() => undefined}>
             <IonIcon slot="start" icon={receiptOutline} />
             Pesanan

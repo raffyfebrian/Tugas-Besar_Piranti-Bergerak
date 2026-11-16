@@ -5,6 +5,7 @@ import type {
   OrderLine,
   OrderStatus,
   PaymentMethod,
+  RecipeIngredient,
   Room,
   Settings,
   StaffMember,
@@ -198,6 +199,103 @@ export const menuSeed: MenuItem[] = [
   },
 ];
 
+/**
+ * Resep per porsi. Jumlah memakai satuan stok, mis. 0.018 kg biji kopi untuk
+ * satu shot espresso. Dipakai untuk memotong stok otomatis saat pesanan masuk dapur.
+ */
+export const RECIPES: Record<string, RecipeIngredient[]> = {
+  'kopi-espresso': [
+    { stockId: 'stock-biji-kopi', qty: 0.018 },
+    { stockId: 'stock-cup', qty: 1 },
+  ],
+  'kopi-americano': [
+    { stockId: 'stock-biji-kopi', qty: 0.018 },
+    { stockId: 'stock-cup', qty: 1 },
+  ],
+  'kopi-cappuccino': [
+    { stockId: 'stock-biji-kopi', qty: 0.018 },
+    { stockId: 'stock-susu', qty: 0.15 },
+    { stockId: 'stock-cup', qty: 1 },
+  ],
+  'kopi-latte': [
+    { stockId: 'stock-biji-kopi', qty: 0.018 },
+    { stockId: 'stock-susu', qty: 0.18 },
+    { stockId: 'stock-cup', qty: 1 },
+  ],
+  'kopi-gula-aren': [
+    { stockId: 'stock-biji-kopi', qty: 0.018 },
+    { stockId: 'stock-susu', qty: 0.15 },
+    { stockId: 'stock-gula-aren', qty: 0.02 },
+    { stockId: 'stock-cup', qty: 1 },
+  ],
+  'kopi-mocha': [
+    { stockId: 'stock-biji-kopi', qty: 0.018 },
+    { stockId: 'stock-susu', qty: 0.15 },
+    { stockId: 'stock-cokelat', qty: 0.02 },
+    { stockId: 'stock-cup', qty: 1 },
+  ],
+  'non-matcha': [
+    { stockId: 'stock-matcha', qty: 0.012 },
+    { stockId: 'stock-susu', qty: 0.2 },
+    { stockId: 'stock-cup', qty: 1 },
+  ],
+  'non-chocolate': [
+    { stockId: 'stock-cokelat', qty: 0.03 },
+    { stockId: 'stock-susu', qty: 0.2 },
+    { stockId: 'stock-cup', qty: 1 },
+  ],
+  'non-teh-lemon': [
+    { stockId: 'stock-teh', qty: 1 },
+    { stockId: 'stock-gula-aren', qty: 0.01 },
+    { stockId: 'stock-cup', qty: 1 },
+  ],
+  'non-air-mineral': [{ stockId: 'stock-air', qty: 1 }],
+  'makan-nasi-goreng': [
+    { stockId: 'stock-beras', qty: 0.12 },
+    { stockId: 'stock-ayam', qty: 0.08 },
+    { stockId: 'stock-kemasan', qty: 1 },
+  ],
+  'makan-mie-goreng': [
+    { stockId: 'stock-tepung', qty: 0.1 },
+    { stockId: 'stock-ayam', qty: 0.05 },
+    { stockId: 'stock-kemasan', qty: 1 },
+  ],
+  'makan-ayam-geprek': [
+    { stockId: 'stock-ayam', qty: 0.18 },
+    { stockId: 'stock-beras', qty: 0.12 },
+    { stockId: 'stock-kemasan', qty: 1 },
+  ],
+  'makan-sandwich': [
+    { stockId: 'stock-tepung', qty: 0.08 },
+    { stockId: 'stock-ayam', qty: 0.06 },
+    { stockId: 'stock-keju', qty: 0.02 },
+    { stockId: 'stock-kemasan', qty: 1 },
+  ],
+  'makan-fries': [
+    { stockId: 'stock-kentang', qty: 0.15 },
+    { stockId: 'stock-kemasan', qty: 1 },
+  ],
+  'camilan-croissant': [
+    { stockId: 'stock-tepung', qty: 0.06 },
+    { stockId: 'stock-susu', qty: 0.03 },
+    { stockId: 'stock-kemasan', qty: 1 },
+  ],
+  'camilan-cheesecake': [
+    { stockId: 'stock-keju', qty: 0.08 },
+    { stockId: 'stock-tepung', qty: 0.03 },
+    { stockId: 'stock-kemasan', qty: 1 },
+  ],
+  'camilan-pancake': [
+    { stockId: 'stock-tepung', qty: 0.08 },
+    { stockId: 'stock-susu', qty: 0.05 },
+    { stockId: 'stock-kemasan', qty: 1 },
+  ],
+};
+
+/** Menambahkan resep ke daftar menu, termasuk menu lama dari localStorage. */
+export const withRecipes = (menu: MenuItem[]): MenuItem[] =>
+  menu.map((item) => ({ ...item, recipe: item.recipe?.length ? item.recipe : (RECIPES[item.id] ?? []) }));
+
 const staffSeed: StaffMember[] = [
   {
     id: 'staff-kasir-1',
@@ -270,6 +368,8 @@ const stockSeed: StockItem[] = [
   { id: 'stock-air', name: 'Air Mineral', unit: 'botol', qty: 48, min: 24 },
   { id: 'stock-cup', name: 'Cup Takeaway', unit: 'pcs', qty: 120, min: 100 },
   { id: 'stock-kemasan', name: 'Kemasan Makanan', unit: 'pcs', qty: 80, min: 100 },
+  { id: 'stock-kentang', name: 'Kentang Beku', unit: 'kg', qty: 10, min: 4 },
+  { id: 'stock-teh', name: 'Teh Celup', unit: 'pcs', qty: 80, min: 30 },
 ];
 
 const settingsSeed: Settings = {
@@ -439,7 +539,7 @@ const orderSeed = (): Order[] => [
 ];
 
 export const createInitialState = (): AppState => ({
-  menu: menuSeed,
+  menu: withRecipes(menuSeed),
   orders: orderSeed(),
   staff: staffSeed,
   rooms: roomsSeed,
@@ -449,6 +549,8 @@ export const createInitialState = (): AppState => ({
   cart: [],
   room: '',
   guestName: '',
+  shifts: [],
+  audits: [],
 });
 
 export const nextOrderCode = (orders: Order[]): string => orderCode(orders);

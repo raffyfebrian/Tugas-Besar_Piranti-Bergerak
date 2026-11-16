@@ -27,6 +27,10 @@ Aplikasi ini mengikuti spesifikasi `penjelasan_sistem_ngoffe_id.md`:
 - **Notifikasi status pesanan**: tamu bisa mengaktifkan notifikasi (plugin `@capacitor/local-notifications` di APK, Web Notifications di browser) agar tetap tahu saat pesanan siap diantar walau halaman tidak dibuka; perubahan status juga memunculkan toast + nada singkat.
 - **Skeleton loading + code splitting**: halaman staf/admin, pembayaran, dan panggung 3D dimuat terpisah dengan fallback shimmer skeleton, sehingga layar awal terasa lebih cepat.
 - **Transisi halaman dan timeline beranimasi**: konten masuk halus, garis timeline tumbuh bertahap, dan ada progress bar tahap pesanan dengan persentase.
+- **Timer masak per item di dapur**: setiap item tiket punya tombol *Mulai masak* dan *Selesai* dengan penghitung waktu berjalan; tombol *Tandai Siap* baru aktif setelah semua item selesai, dan ada *Mulai semua* untuk menyiapkan tiket sekaligus.
+- **Stok otomatis dari resep**: setiap menu punya resep per porsi, stok bahan berkurang otomatis saat pesanan pertama kali masuk dapur, bahan dikembalikan bila pesanan di-void, dan staf menerima toast + nada peringatan ketika bahan menembus batas minimum.
+- **Shift & rekonsiliasi kas**: kasir membuka shift dengan kas awal, memantau penjualan cash/QRIS berjalan, lalu menutup shift dengan uang fisik di laci; selisih kas dihitung otomatis dan riwayat shift tersimpan.
+- **Void / refund dengan audit trail**: pembatalan pesanan wajib beralasan, bisa disertai refund cash/QRIS, tercatat permanen di audit trail (halaman transaksi & shift), dan struk tamu diberi stempel VOID.
 
 > Catatan: prototipe ini **tanpa backend**. Seluruh data disimpan di `localStorage` browser (`ngoffe-ionic-state-v1`) dan sudah berisi data demo.
 
@@ -145,9 +149,10 @@ src/
   pages/public/         # Beranda, Tentang, Menu, Galeri, Kontak
   pages/guest/          # Scan, OrderMenu, Cart, Payment, OrderStatus
   pages/staff/          # Login
-  pages/kasir/          # Pesanan, Detail, Transaksi
-  pages/kitchen/        # Antrean dapur + stok
-  pages/admin/          # Dashboard, Menu, Kamar, Staf, Stok, Laporan, Pengaturan
+  pages/kasir/          # Pesanan, Detail, Transaksi, Shift & Kas
+  pages/kitchen/        # Antrean dapur + timer masak + stok
+  pages/admin/          # Dashboard, Menu, Kamar, Staf, Stok & Resep, Laporan, Pengaturan
+  utils/                # format, ETA, resep stok, timer dapur, native, dsb.
   theme/                # variabel & styling Ngoffe ID
 android/                # proyek native Capacitor Android
 ```
@@ -209,6 +214,14 @@ Showcase 3D beranda (`src/components/Showcase3D.tsx`) dibangun murni dengan CSS 
 - **Notifikasi status** memakai `src/utils/statusNotify.ts` + `useOrderStatusNotice`. Di native memakai `LocalNotifications` dengan channel `ngoffe-status`; di web memakai `Notification` API dan hanya muncul saat tab tidak terlihat. Preferensi tamu disimpan di `ngoffe-notify-enabled` dan baru dianggap aktif setelah izin diberikan.
 - **Skeleton** berasal dari `React.lazy` + `Suspense` (`src/components/Skeleton.tsx`): `PageSkeleton` untuk halaman staf/admin/pembayaran, `ShowcaseSkeleton` untuk panggung 3D, dan `MenuGridSkeleton` untuk daftar menu.
 - **Transisi dan timeline** murni CSS di `src/theme/app.css`: `pageEnter` pada `ion-content::part(scroll)`, `skeletonShimmer` pada balok skeleton, `lineGrow` pada garis timeline yang selesai, gradien parsial untuk tahap aktif, serta `progress-fill` dengan sheen. Semua animasi ikut berhenti saat *prefers-reduced-motion*.
+
+### Operasional dapur, stok, dan kas
+
+- **Resep & konsumsi stok** (`src/utils/recipes.ts`): `MenuItem.recipe` menyimpan bahan per porsi dalam satuan stok (presisi dua desimal). Saat status pesanan pertama kali menjadi `diproses`, `setOrderStatus` memotong stok lewat `applyConsumption`; void mengembalikannya lewat `restoreConsumption` dan menandai `stockRestored` agar tidak terhitung dua kali. Bahan baru ditambahkan otomatis saat migrasi `localStorage` (mis. `stock-kentang`, `stock-teh`).
+- **Timer masak** (`src/utils/kitchen.ts`): status timer per item disimpan di `Order.prep.items` (`startedAt`/`finishedAt`). Halaman Kitchen berdetak tiap detik, menampilkan `mm:ss`, dan memakai `prepStats` untuk mengaktifkan tombol *Tandai Siap* hanya ketika semua item selesai.
+- **Peringatan stok** (`useLowStockAlert`): hanya bahan yang *baru* melewati batas minimum yang memicu toast + nada, dipasang sekali di `StaffShell` sehingga berlaku di kasir, dapur, dan admin.
+- **Shift kasir** (`src/pages/kasir/KasirShift.tsx`): shift terbuka per staf dengan `openingCash`. Penjualan dihitung dari pesanan dalam rentang shift (tanpa pesanan batal/belum dibayar); saat tutup, `expectedCash = openingCash + cashSales`, lalu selisih terhadap uang fisik disimpan bersama `closedAt`, `qrisSales`, `orderCount`, dan catatan.
+- **Void/refund** (`voidOrder` di `AppStore`): alasan wajib, refund dibatasi maksimal total pesanan, status menjadi `dibatalkan`, dan setiap aksi menulis `AuditEntry` (`action`, `amount`, `method`, `reason`, `by`). Audit tampil di detail pesanan, halaman transaksi, dan halaman shift.
 
 ### Ikon, splash, dan deep link QR
 

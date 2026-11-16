@@ -19,7 +19,8 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { useWakeLock } from '../../hooks/useWakeLock';
 import { useApp } from '../../store/AppStore';
 import type { Order } from '../../types';
-import { isToday, statusLabel, timeAgo } from '../../utils/format';
+import { formatQty, isToday, statusLabel, timeAgo } from '../../utils/format';
+import { formatPrepClock, prepItemsFor, prepSeconds, prepStats } from '../../utils/kitchen';
 import { successFeedback, tapFeedback } from '../../utils/native';
 import { playOrderChime, unlockNotificationSound } from '../../utils/notify';
 
@@ -35,7 +36,7 @@ const elapsedMinutes = (iso: string, now: number): number =>
   Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000));
 
 const Kitchen: React.FC = () => {
-  const { state, setOrderStatus, adjustStock } = useApp();
+  const { state, setOrderStatus, adjustStock, startKitchenItem, finishKitchenItem, startAllKitchenItems } = useApp();
   const location = useLocation();
   const [present] = useIonToast();
   const [tab, setTab] = useState<Tab>('antrean');
@@ -59,7 +60,8 @@ const Kitchen: React.FC = () => {
   const queueWatchReadyRef = useRef(false);
 
   useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 15000);
+    // Timer masak perlu detak per detik; SLA tetap dihitung dalam menit.
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
   }, []);
 
@@ -282,6 +284,9 @@ const Kitchen: React.FC = () => {
                   : minutes >= SLA_WARN_MINUTES
                     ? 'warn'
                     : 'ok';
+            const prep = prepItemsFor(order);
+            const stats = prepStats(order);
+            const processing = order.status === 'diproses';
             return (
               <div className={`panel kitchen-ticket sla-${slaState}`} key={order.id}>
                 <div className="row-between wrap">
@@ -290,7 +295,7 @@ const Kitchen: React.FC = () => {
                     <div className="order-meta" style={{ marginTop: 4 }}>
                       <span>🛏️ Kamar {order.room}</span>
                       <span>• {timeAgo(order.createdAt)}</span>
-                      {order.status === 'diproses' && (
+                      {processing && (
                         <span className={`sla-chip ${slaState}`}>
                           <IonIcon icon={timerOutline} />
                           {minutes} mnt
@@ -304,38 +309,112 @@ const Kitchen: React.FC = () => {
 
                 <div className="divider" />
 
-                {order.items.map((item) => (
-                  <div className="item-line" key={`${item.menuId}-${item.name}`}>
-                    <div>
-                      <strong>
-                        <span className="badge-soft" style={{ marginRight: 6 }}>
-                          {item.qty}×
-                        </span>
-                        {item.name}
-                      </strong>
-                      {item.note && <div className="item-note">📝 {item.note}</div>}
-                    </div>
-                  </div>
-                ))}
-
-                <div className="row-between" style={{ marginTop: 12 }}>
-                  <span className="muted small">{order.guestName}</span>
-                  {order.status === 'diproses' ? (
-                    <IonButton
-                      size="small"
-                      color="success"
-                      onClick={() => {
-                        void successFeedback();
-                        setOrderStatus(order.id, 'siap_diantar', 'Kitchen', 'Pesanan selesai disiapkan, siap diantar');
-                      }}
+                {order.items.map((item) => {
+                  const itemPrep = prep.find((entry) => entry.menuId === item.menuId);
+                  const done = Boolean(itemPrep?.finishedAt);
+                  const running = Boolean(itemPrep?.startedAt) && !done;
+                  const seconds = prepSeconds(itemPrep, now);
+                  return (
+                    <div
+                      className={`kitchen-item ${done ? 'done' : running ? 'running' : 'idle'}`}
+                      key={`${item.menuId}-${item.name}`}
                     >
-                      <IonIcon slot="start" icon={checkmarkCircleOutline} />
-                      Tandai Siap
-                    </IonButton>
-                  ) : (
-                    <span className="badge-soft success">Menunggu diantar</span>
-                  )}
+                      <div className="grow">
+                        <strong>
+                          <span className="badge-soft" style={{ marginRight: 6 }}>
+                            {item.qty}×
+                          </span>
+                          {item.name}
+                        </strong>
+                        {item.note && <div className="item-note">📝 {item.note}</div>}
+                        {itemPrep?.startedAt && (
+                          <div className="prep-timer">
+                            <IonIcon icon={done ? checkmarkCircleOutline : timerOutline} />
+                            <strong>{formatPrepClock(seconds)}</strong>
+                            <span className="muted small">{done ? 'total masak' : 'berjalan'}</span>
+                          </div>
+                        )}
+                      </div>
+                      {processing && (
+                        <div className="prep-actions">
+                          {!itemPrep?.startedAt && (
+                            <IonButton
+                              size="small"
+                              fill="outline"
+                              onClick={() => {
+                                void tapFeedback();
+                                startKitchenItem(order.id, item.menuId);
+                              }}
+                            >
+                              Mulai masak
+                            </IonButton>
+                          )}
+                          {running && (
+                            <IonButton
+                              size="small"
+                              color="success"
+                              onClick={() => {
+                                void successFeedback();
+                                finishKitchenItem(order.id, item.menuId);
+                              }}
+                            >
+                              Selesai
+                            </IonButton>
+                          )}
+                          {done && <span className="badge-soft success">Selesai</span>}
+                        </div>
+                      )}
+                      {!processing && done && <span className="badge-soft success">Selesai</span>}
+                    </div>
+                  );
+                })}
+
+                <div className="prep-summary">
+                  <span className="muted small">
+                    {stats.finished}/{stats.total} item selesai
+                    {processing && stats.remaining > 0 ? ` • ${stats.remaining} tersisa` : ''}
+                  </span>
+                  <div className="row wrap" style={{ gap: 6 }}>
+                    {processing && stats.started < stats.total && (
+                      <IonButton
+                        size="small"
+                        fill="clear"
+                        onClick={() => {
+                          void tapFeedback();
+                          startAllKitchenItems(order.id);
+                        }}
+                      >
+                        Mulai semua
+                      </IonButton>
+                    )}
+                    {processing ? (
+                      <IonButton
+                        size="small"
+                        color="success"
+                        disabled={!stats.allFinished}
+                        onClick={() => {
+                          void successFeedback();
+                          setOrderStatus(
+                            order.id,
+                            'siap_diantar',
+                            'Kitchen',
+                            'Pesanan selesai disiapkan, siap diantar',
+                          );
+                        }}
+                      >
+                        <IonIcon slot="start" icon={checkmarkCircleOutline} />
+                        Tandai Siap
+                      </IonButton>
+                    ) : (
+                      <span className="badge-soft success">Menunggu diantar</span>
+                    )}
+                  </div>
                 </div>
+                {processing && !stats.allFinished && (
+                  <p className="muted small" style={{ margin: '8px 0 0' }}>
+                    Tombol siap aktif setelah semua item ditandai selesai.
+                  </p>
+                )}
               </div>
             );
           })}
@@ -384,7 +463,7 @@ const Kitchen: React.FC = () => {
                       )}
                     </strong>
                     <span className="muted small">
-                      {item.qty} {item.unit} / min {item.min}
+                      {formatQty(item.qty)} {item.unit} / min {formatQty(item.min)}
                     </span>
                   </div>
                   <div className="stock-bar">

@@ -5,6 +5,7 @@ import React, { useMemo, useState } from 'react';
 import { StaffShell } from '../../components/StaffShell';
 import { useApp } from '../../store/AppStore';
 import type { StockItem } from '../../types';
+import { formatQty } from '../../utils/format';
 
 const emptyStock = (): StockItem => ({
   id: '',
@@ -156,7 +157,7 @@ const AdminStock: React.FC = () => {
                     )}
                   </strong>
                   <span className="muted small">
-                    {item.qty} {item.unit} / min {item.min}
+                    {formatQty(item.qty)} {item.unit} / min {formatQty(item.min)}
                   </span>
                 </div>
                 <div className="stock-bar">
@@ -192,6 +193,47 @@ const AdminStock: React.FC = () => {
             </div>
           );
         })}
+      </div>
+
+      <div className="panel" style={{ marginTop: 16 }}>
+        <div className="row-between wrap" style={{ marginBottom: 8 }}>
+          <div>
+            <h3 className="panel-title">Resep menu</h3>
+            <p className="panel-sub">
+              Stok bahan berkurang otomatis sesuai resep saat kasir mengirim pesanan ke dapur.
+            </p>
+          </div>
+          <span className="badge-soft">{state.menu.filter((item) => item.recipe?.length).length} menu berresep</span>
+        </div>
+
+        {state.menu
+          .filter((item) => item.recipe?.length)
+          .map((item) => (
+            <div className="recipe-row" key={item.id}>
+              <div className="recipe-head">
+                <span className="recipe-emoji" aria-hidden="true">
+                  {item.emoji}
+                </span>
+                <div>
+                  <strong className="small">{item.name}</strong>
+                  <div className="muted small">per porsi</div>
+                </div>
+              </div>
+              <div className="recipe-ingredients">
+                {item.recipe?.map((ingredient) => {
+                  const stockItem = state.stock.find((entry) => entry.id === ingredient.stockId);
+                  return (
+                    <span className="recipe-chip" key={`${item.id}-${ingredient.stockId}`}>
+                      {stockItem?.name ?? ingredient.stockId}
+                      <strong>
+                        {formatQty(ingredient.qty)} {stockItem?.unit ?? ''}
+                      </strong>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
       </div>
 
       <IonModal isOpen={open} onDidDismiss={() => setOpen(false)}>

@@ -9,12 +9,16 @@ import {
   IonTitle,
   IonToolbar,
   useIonRouter,
+  useIonToast,
 } from '@ionic/react';
 import { logOutOutline, storefrontOutline } from 'ionicons/icons';
-import React from 'react';
+import React, { useCallback } from 'react';
 
+import { useLowStockAlert } from '../hooks/useLowStockAlert';
 import { useApp } from '../store/AppStore';
+import type { StockItem } from '../types';
 import { roleLabel } from '../utils/format';
+import { playOrderChime } from '../utils/notify';
 
 interface StaffShellProps {
   title: string;
@@ -26,7 +30,31 @@ interface StaffShellProps {
 export const StaffShell: React.FC<StaffShellProps> = ({ title, subtitle, actions, children }) => {
   const { state, logout } = useApp();
   const router = useIonRouter();
+  const [present] = useIonToast();
   const role = state.session?.role ?? 'kasir';
+
+  // Peringatan stok menipis muncul di semua halaman staf, termasuk saat kasir memvalidasi pesanan.
+  const notifyLowStock = useCallback(
+    (items: StockItem[]) => {
+      try {
+        if (localStorage.getItem('ngoffe-sound') !== 'off') playOrderChime();
+      } catch {
+        // Preferensi suara tidak kritis.
+      }
+      void present({
+        message:
+          items.length === 1
+            ? `Stok menipis: ${items[0].name} tersisa ${items[0].qty} ${items[0].unit}.`
+            : `${items.length} bahan menipis: ${items.map((item) => item.name).join(', ')}.`,
+        duration: 3600,
+        color: 'warning',
+        position: 'top',
+      });
+    },
+    [present],
+  );
+
+  useLowStockAlert(state.stock, notifyLowStock);
 
   const handleLogout = () => {
     logout();

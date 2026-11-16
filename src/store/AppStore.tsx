@@ -1,38 +1,51 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
-import { createInitialState } from '../data/seed';
+import { createInitialState, withRecipes } from '../data/seed';
 import type {
   AppState,
+  AuditEntry,
   CartLine,
   MenuItem,
   Order,
   OrderStatus,
   PaymentMethod,
+  RefundMethod,
   Room,
   Session,
   Settings,
+  Shift,
   StaffMember,
   StockItem,
 } from '../types';
 import { orderCode } from '../utils/format';
+import { prepItemsFor } from '../utils/kitchen';
+import { applyConsumption, consumptionFor, restoreConsumption, roundQty } from '../utils/recipes';
 
 const STORAGE_KEY = 'ngoffe-ionic-state-v1';
 const ORDER_SYNC_CHANNEL = 'ngoffe-orders-sync-v1';
 const hasBroadcastChannel = typeof BroadcastChannel !== 'undefined';
 
 const loadState = (): AppState => {
+  const seed = createInitialState();
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return createInitialState();
+    if (!raw) return seed;
     const parsed = JSON.parse(raw) as Partial<AppState>;
-    if (!parsed.menu || !parsed.orders) return createInitialState();
+    if (!parsed.menu || !parsed.orders) return seed;
+    const savedStock = Array.isArray(parsed.stock) ? parsed.stock : [];
+    // Bahan baru (mis. Kentang Beku) ditambahkan saat versi aplikasi naik tanpa menghapus data lama.
+    const missingStock = seed.stock.filter((item) => !savedStock.some((saved) => saved.id === item.id));
     return {
-      ...createInitialState(),
+      ...seed,
       ...parsed,
-      settings: { ...createInitialState().settings, ...parsed.settings },
+      menu: withRecipes(parsed.menu),
+      stock: [...savedStock, ...missingStock],
+      settings: { ...seed.settings, ...parsed.settings },
+      shifts: Array.isArray(parsed.shifts) ? parsed.shifts : [],
+      audits: Array.isArray(parsed.audits) ? parsed.audits : [],
     } as AppState;
   } catch {
-    return createInitialState();
+    return seed;
   }
 };
 
@@ -42,6 +55,13 @@ interface LoginResult {
   ok: boolean;
   role?: Session['role'];
   message?: string;
+}
+
+interface VoidOptions {
+  reason: string;
+  by: string;
+  refund: RefundMethod;
+  amount: number;
 }
 
 interface AppContextValue {
@@ -62,6 +82,12 @@ interface AppContextValue {
   uploadProof: (orderId: string, fileName: string) => void;
   setOrderStatus: (orderId: string, status: OrderStatus, by: string, note?: string) => void;
   cancelOrder: (orderId: string, reason: string, by: string) => void;
+  voidOrder: (orderId: string, options: VoidOptions) => void;
+  startKitchenItem: (orderId: string, menuId: string) => void;
+  finishKitchenItem: (orderId: string, menuId: string) => void;
+  startAllKitchenItems: (orderId: string) => void;
+  openShift: (openingCash: number) => Shift | null;
+  closeShift: (closingCash: number, note?: string) => void;
   saveMenuItem: (item: MenuItem) => void;
   deleteMenuItem: (id: string) => void;
   toggleMenuAvailability: (id: string) => void;
@@ -293,18 +319,27 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
 
   const setOrderStatus = useCallback((orderId: string, status: OrderStatus, by: string, note?: string) => {
     const now = new Date().toISOString();
-    setState((prev) => ({
-      ...prev,
-      orders: prev.orders.map((order) => {
+    setState((prev) => {
+      let stock = prev.stock;
+      const orders = prev.orders.map((order) => {
         if (order.id !== orderId || order.status === status) return order;
+
+        // Pemotongan bahan hanya sekali, saat pesanan pertama kali masuk dapur.
+        const firstTimeInKitchen =
+          status === 'diproses' && !order.timeline.some((entry) => entry.status === 'diproses');
+        if (firstTimeInKitchen) {
+          stock = applyConsumption(stock, consumptionFor(order.items, prev.menu));
+        }
+
         return {
           ...order,
           status,
           updatedAt: now,
           timeline: [...order.timeline, { status, at: now, by, note }],
         };
-      }),
-    }));
+      });
+      return { ...prev, orders, stock };
+    });
   }, []);
 
   const cancelOrder = useCallback((orderId: string, reason: string, by: string) => {
@@ -324,6 +359,167 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       ),
     }));
   }, []);
+
+  /**
+   * Void/refund pesanan dengan alasan wajib. Bahan yang sudah terpakai
+   * dikembalikan ke stok, dan setiap aksi dicatat di audit trail.
+   */
+  const voidOrder = useCallback((orderId: string, options: VoidOptions) => {
+    const now = new Date().toISOString();
+    setState((prev) => {
+      const order = prev.orders.find((item) => item.id === orderId);
+      if (!order || order.status === 'dibatalkan') return prev;
+
+      const reason = options.reason.trim() || 'Tanpa alasan';
+      const amount = options.refund === 'none' ? 0 : Math.max(0, Math.min(roundQty(options.amount), order.total));
+      const inKitchen = order.timeline.some((entry) => entry.status === 'diproses');
+      const restore = inKitchen && !order.stockRestored;
+      const stock = restore ? restoreConsumption(prev.stock, consumptionFor(order.items, prev.menu)) : prev.stock;
+
+      const audit: AuditEntry = {
+        id: uid('audit'),
+        at: now,
+        by: options.by,
+        action: amount > 0 ? 'refund' : 'void',
+        orderId: order.id,
+        orderCode: order.code,
+        amount,
+        reason,
+        method: options.refund,
+      };
+
+      const note =
+        amount > 0 ? `Void/refund ${options.refund.toUpperCase()} ${amount} • ${reason}` : `Void pesanan • ${reason}`;
+
+      return {
+        ...prev,
+        stock,
+        audits: [audit, ...prev.audits],
+        orders: prev.orders.map((item) =>
+          item.id === orderId
+            ? {
+                ...item,
+                status: 'dibatalkan' as OrderStatus,
+                cancelReason: reason,
+                voidReason: reason,
+                refundAmount: amount,
+                refundMethod: options.refund,
+                voidedAt: now,
+                stockRestored: item.stockRestored || restore,
+                updatedAt: now,
+                timeline: [...item.timeline, { status: 'dibatalkan' as OrderStatus, at: now, by: options.by, note }],
+              }
+            : item,
+        ),
+      };
+    });
+  }, []);
+
+  const startKitchenItem = useCallback((orderId: string, menuId: string) => {
+    const now = new Date().toISOString();
+    setState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((order) => {
+        if (order.id !== orderId) return order;
+        const items = prepItemsFor(order).map((item) =>
+          item.menuId === menuId && !item.startedAt ? { ...item, startedAt: now } : item,
+        );
+        return { ...order, prep: { items }, updatedAt: now };
+      }),
+    }));
+  }, []);
+
+  const finishKitchenItem = useCallback((orderId: string, menuId: string) => {
+    const now = new Date().toISOString();
+    setState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((order) => {
+        if (order.id !== orderId) return order;
+        const items = prepItemsFor(order).map((item) =>
+          item.menuId === menuId
+            ? { ...item, startedAt: item.startedAt ?? now, finishedAt: item.finishedAt ?? now }
+            : item,
+        );
+        return { ...order, prep: { items }, updatedAt: now };
+      }),
+    }));
+  }, []);
+
+  const startAllKitchenItems = useCallback((orderId: string) => {
+    const now = new Date().toISOString();
+    setState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((order) => {
+        if (order.id !== orderId) return order;
+        const items = prepItemsFor(order).map((item) => (item.startedAt ? item : { ...item, startedAt: now }));
+        return { ...order, prep: { items }, updatedAt: now };
+      }),
+    }));
+  }, []);
+
+  const openShift = useCallback(
+    (openingCash: number): Shift | null => {
+      const session = state.session;
+      if (!session) return null;
+      const existing = state.shifts.find((shift) => shift.status === 'open' && shift.staffId === session.staffId);
+      if (existing) return existing;
+
+      const shift: Shift = {
+        id: uid('shift'),
+        staffId: session.staffId,
+        staffName: session.name,
+        openedAt: new Date().toISOString(),
+        openingCash: Math.max(0, roundQty(openingCash)),
+        status: 'open',
+      };
+      setState((prev) => ({ ...prev, shifts: [shift, ...prev.shifts] }));
+      return shift;
+    },
+    [state.session, state.shifts],
+  );
+
+  const closeShift = useCallback(
+    (closingCash: number, note?: string) => {
+      const session = state.session;
+      if (!session) return;
+      const now = new Date().toISOString();
+      setState((prev) => {
+        const open = prev.shifts.find((shift) => shift.status === 'open' && shift.staffId === session.staffId);
+        if (!open) return prev;
+
+        const scoped = prev.orders.filter(
+          (order) =>
+            order.createdAt >= open.openedAt && order.status !== 'dibatalkan' && order.status !== 'menunggu_pembayaran',
+        );
+        const cashSales = scoped
+          .filter((order) => order.payment === 'cash')
+          .reduce((total, order) => total + order.total, 0);
+        const qrisSales = scoped
+          .filter((order) => order.payment === 'qris')
+          .reduce((total, order) => total + order.total, 0);
+
+        return {
+          ...prev,
+          shifts: prev.shifts.map((shift) =>
+            shift.id === open.id
+              ? {
+                  ...shift,
+                  status: 'closed',
+                  closedAt: now,
+                  closingCash: Math.max(0, roundQty(closingCash)),
+                  expectedCash: roundQty(open.openingCash + cashSales),
+                  cashSales: roundQty(cashSales),
+                  qrisSales: roundQty(qrisSales),
+                  orderCount: scoped.length,
+                  note: note?.trim() || undefined,
+                }
+              : shift,
+          ),
+        };
+      });
+    },
+    [state.session],
+  );
 
   const saveMenuItem = useCallback((item: MenuItem) => {
     setState((prev) => {
@@ -382,7 +578,7 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
     setState((prev) => ({
       ...prev,
       stock: prev.stock.map((item) =>
-        item.id === id ? { ...item, qty: Math.max(0, Number((item.qty + delta).toFixed(1))) } : item,
+        item.id === id ? { ...item, qty: Math.max(0, roundQty(item.qty + delta)) } : item,
       ),
     }));
   }, []);
@@ -434,6 +630,12 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       uploadProof,
       setOrderStatus,
       cancelOrder,
+      voidOrder,
+      startKitchenItem,
+      finishKitchenItem,
+      startAllKitchenItems,
+      openShift,
+      closeShift,
       saveMenuItem,
       deleteMenuItem,
       toggleMenuAvailability,
@@ -466,6 +668,12 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       uploadProof,
       setOrderStatus,
       cancelOrder,
+      voidOrder,
+      startKitchenItem,
+      finishKitchenItem,
+      startAllKitchenItems,
+      openShift,
+      closeShift,
       saveMenuItem,
       deleteMenuItem,
       toggleMenuAvailability,

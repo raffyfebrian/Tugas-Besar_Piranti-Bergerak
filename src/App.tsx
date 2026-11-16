@@ -57,6 +57,7 @@ const AdminStaff = React.lazy(() => import('./pages/admin/AdminStaff'));
 const AdminStock = React.lazy(() => import('./pages/admin/AdminStock'));
 const Kitchen = React.lazy(() => import('./pages/kitchen/Kitchen'));
 const KasirOrderDetail = React.lazy(() => import('./pages/kasir/KasirOrderDetail'));
+const KasirShift = React.lazy(() => import('./pages/kasir/KasirShift'));
 const KasirTransactions = React.lazy(() => import('./pages/kasir/KasirTransactions'));
 const Payment = React.lazy(() => import('./pages/guest/Payment'));
 
@@ -125,6 +126,16 @@ const Routes: React.FC = () => (
           <RequireRole roles={['kasir', 'admin']}>
             <Loading>
               <KasirTransactions />
+            </Loading>
+          </RequireRole>
+        }
+      />
+      <Route
+        path="/staff/kasir/shift"
+        element={
+          <RequireRole roles={['kasir', 'admin']}>
+            <Loading>
+              <KasirShift />
             </Loading>
           </RequireRole>
         }

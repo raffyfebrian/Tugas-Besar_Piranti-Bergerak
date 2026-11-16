@@ -2880,13 +2880,7 @@ a {
 }
 
 .timeline-item.current::before {
-  background: linear-gradient(
-    to bottom,
-    var(--ngoffe-accent) 0%,
-    var(--ngoffe-accent) 34%,
-    #d7e5dc 34%,
-    #d7e5dc 100%
-  );
+  background: linear-gradient(to bottom, var(--ngoffe-accent) 0%, var(--ngoffe-accent) 34%, #d7e5dc 34%, #d7e5dc 100%);
 }
 
 @keyframes lineGrow {
@@ -2907,6 +2901,411 @@ a {
   }
   .notify-panel ion-button {
     margin-left: 52px;
+  }
+}
+
+/* ============================================================
+   Paket B — dapur, resep, void/refund, shift kasir
+   ============================================================ */
+.kitchen-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-top: 8px;
+  border-radius: 12px;
+  border: 1px solid var(--ngoffe-line);
+  background: #fbfdfc;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.kitchen-item.running {
+  border-color: #b8dcc8;
+  background: #f2faf5;
+}
+
+.kitchen-item.done {
+  border-color: #cfe6d9;
+  background: #f6fbf8;
+  opacity: 0.92;
+}
+
+.kitchen-item .grow {
+  min-width: 0;
+}
+
+.prep-timer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 0.78rem;
+  color: var(--ngoffe-forest);
+}
+
+.prep-timer strong {
+  font-variant-numeric: tabular-nums;
+  font-size: 0.92rem;
+  letter-spacing: 0.02em;
+}
+
+.kitchen-item.done .prep-timer {
+  color: #2f7d60;
+}
+
+.prep-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.prep-actions ion-button {
+  margin: 0;
+  --padding-start: 10px;
+  --padding-end: 10px;
+}
+
+.prep-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--ngoffe-line);
+}
+
+.prep-summary ion-button {
+  margin: 0;
+}
+
+/* Resep menu di halaman stok */
+.recipe-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--ngoffe-line);
+}
+
+.recipe-row:last-child {
+  border-bottom: 0;
+}
+
+.recipe-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 190px;
+}
+
+.recipe-emoji {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--ngoffe-sand);
+  font-size: 1.05rem;
+}
+
+.recipe-ingredients {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.recipe-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #f0f8f3;
+  border: 1px solid #d7e9df;
+  font-size: 0.72rem;
+  color: #35564a;
+}
+
+.recipe-chip strong {
+  color: var(--ngoffe-forest);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Audit trail void / refund */
+.audit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.audit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--ngoffe-line);
+  background: #fbfdfc;
+}
+
+.audit-row .grow {
+  min-width: 0;
+}
+
+.audit-icon {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: #fdeeea;
+  color: #b03b2e;
+  font-size: 1rem;
+}
+
+.audit-icon.refund {
+  background: #eaf3ff;
+  color: #2f5f9e;
+}
+
+.receipt .receipt-void {
+  margin: 10px 0 4px;
+  padding: 6px 0;
+  text-align: center;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #b03b2e;
+  border-top: 2px double #b03b2e;
+  border-bottom: 2px double #b03b2e;
+}
+
+/* Modal sheet void/refund */
+ion-modal.modal-sheet {
+  --width: min(520px, 94vw);
+  --max-width: 520px;
+  --height: auto;
+  --max-height: 92vh;
+  --border-radius: 20px;
+  align-items: center;
+}
+
+.modal-body {
+  padding: 22px 20px 24px;
+  background: #fff;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #35564a;
+  margin-bottom: 6px;
+}
+
+.field-label .required {
+  color: #b03b2e;
+}
+
+.field-input {
+  --background: #f8fbf9;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  border: 1px solid var(--ngoffe-line);
+  border-radius: 12px;
+  font-size: 0.88rem;
+}
+
+ion-textarea.field-input {
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+}
+
+.chip-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chip-option {
+  border: 1.5px solid var(--ngoffe-line);
+  background: #fff;
+  color: #35564a;
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.chip-option.active {
+  border-color: var(--ngoffe-forest);
+  background: #f0f8f3;
+  color: var(--ngoffe-forest);
+  box-shadow: 0 6px 16px rgba(31, 92, 69, 0.12);
+}
+
+.pay-icon.danger {
+  background: #fdeeea;
+  color: #b03b2e;
+}
+
+/* Shift kasir */
+.shift-active {
+  border-color: #c2dfcd;
+  background: linear-gradient(180deg, #f4fbf7, #ffffff 60%);
+}
+
+.shift-pulse {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  background: #2f9e6b;
+  box-shadow: 0 0 0 0 rgba(47, 158, 107, 0.5);
+  animation: shiftPulse 2s infinite;
+}
+
+@keyframes shiftPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(47, 158, 107, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 9px rgba(47, 158, 107, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(47, 158, 107, 0);
+  }
+}
+
+.shift-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.shift-metric {
+  border: 1px solid var(--ngoffe-line);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.shift-metric strong {
+  font-size: 0.98rem;
+  color: var(--ngoffe-forest);
+  font-variant-numeric: tabular-nums;
+}
+
+.shift-metric.highlight {
+  border-color: #b8dcc8;
+  background: #eef8f2;
+}
+
+.shift-diff {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 0.86rem;
+  background: #f2f7f4;
+  color: #35564a;
+}
+
+.shift-diff strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.shift-diff.ok {
+  background: #e8f4ee;
+  color: #1f6b4c;
+}
+
+.shift-diff.short {
+  background: #fdeeea;
+  color: #b03b2e;
+}
+
+.shift-diff.over {
+  background: #fff5e2;
+  color: #a86a12;
+}
+
+.shift-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.shift-card {
+  border: 1px solid var(--ngoffe-line);
+  border-radius: 14px;
+  padding: 12px 14px;
+  background: #fbfdfc;
+}
+
+.shift-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 14px;
+  margin-top: 10px;
+  font-size: 0.78rem;
+  color: #5b6f63;
+}
+
+.shift-card-grid strong {
+  color: var(--ngoffe-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.shift-card-grid .ok strong {
+  color: #1f6b4c;
+}
+
+.shift-card-grid .short,
+.shift-card-grid .short strong {
+  color: #b03b2e;
+}
+
+.shift-card-grid .over,
+.shift-card-grid .over strong {
+  color: #a86a12;
+}
+
+@media (max-width: 640px) {
+  .recipe-row {
+    flex-direction: column;
+  }
+  .recipe-head {
+    flex: 1 1 auto;
+  }
+  .recipe-ingredients {
+    justify-content: flex-start;
+  }
+  .kitchen-item {
+    flex-wrap: wrap;
+  }
+  .prep-actions {
+    flex-direction: row;
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 

@@ -22,6 +22,7 @@ import {
   settingsOutline,
   statsChartOutline,
   storefrontOutline,
+  timeOutline,
   walletOutline,
 } from 'ionicons/icons';
 import React from 'react';
@@ -33,6 +34,7 @@ const LINKS: Record<string, { href: string; label: string; icon: string }[]> = {
   kasir: [
     { href: '/staff/kasir', label: 'Pesanan Masuk', icon: receiptOutline },
     { href: '/staff/kasir/transactions', label: 'Transaksi Harian', icon: walletOutline },
+    { href: '/staff/kasir/shift', label: 'Shift & Kas', icon: timeOutline },
   ],
   kitchen: [
     { href: '/staff/kitchen', label: 'Antrean Dapur', icon: flameOutline },

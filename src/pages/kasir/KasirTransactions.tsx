@@ -5,6 +5,7 @@ import {
   downloadOutline,
   qrCodeOutline,
   receiptOutline,
+  shieldCheckmarkOutline,
   walletOutline,
 } from 'ionicons/icons';
 import React, { useMemo, useState } from 'react';
@@ -48,8 +49,14 @@ const KasirTransactions: React.FC = () => {
   const qrisCount = paid.filter((order) => order.payment === 'qris').length;
   const cashCount = paid.filter((order) => order.payment === 'cash').length;
 
+  const auditsInRange = useMemo(() => {
+    const start = startOfRange(range);
+    return state.audits.filter((entry) => new Date(entry.at) >= start).sort((a, b) => b.at.localeCompare(a.at));
+  }, [state.audits, range]);
+  const refundTotal = auditsInRange.reduce((total, entry) => total + entry.amount, 0);
+
   const exportCsv = () => {
-    const header = ['Kode', 'Tanggal', 'Kamar', 'Tamu', 'Pembayaran', 'Status', 'Total'];
+    const header = ['Kode', 'Tanggal', 'Kamar', 'Tamu', 'Pembayaran', 'Status', 'Total', 'Refund', 'Alasan'];
     const rows = visible.map((order) => [
       order.code,
       formatDateTime(order.createdAt),
@@ -58,6 +65,8 @@ const KasirTransactions: React.FC = () => {
       paymentLabel[order.payment],
       statusLabel[order.status],
       order.total,
+      order.refundAmount ?? 0,
+      order.voidReason ?? '',
     ]);
     const csv = [header, ...rows]
       .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
@@ -130,6 +139,16 @@ const KasirTransactions: React.FC = () => {
           <div className="kpi-value">{cashCount}</div>
           <div className="kpi-note">Dibayar di kamar</div>
         </div>
+        <div className="kpi-card">
+          <div className="kpi-icon">
+            <IonIcon icon={shieldCheckmarkOutline} />
+          </div>
+          <div className="kpi-label">Void / Refund</div>
+          <div className="kpi-value">{auditsInRange.length}</div>
+          <div className="kpi-note">
+            {refundTotal > 0 ? `${rupiah(refundTotal)} dikembalikan` : 'Tanpa refund tercatat'}
+          </div>
+        </div>
       </div>
 
       <div className="panel">
@@ -178,6 +197,9 @@ const KasirTransactions: React.FC = () => {
                   </div>
                   <div className="row" style={{ gap: 10 }}>
                     <StatusBadge status={order.status} label={statusLabel[order.status]} />
+                    {order.refundAmount ? (
+                      <span className="badge-soft danger">Refund {rupiah(order.refundAmount)}</span>
+                    ) : null}
                     <strong className="order-total">{rupiah(order.total)}</strong>
                     <IonIcon icon={arrowForwardOutline} color="medium" />
                   </div>
@@ -191,6 +213,56 @@ const KasirTransactions: React.FC = () => {
             title="Belum ada transaksi"
             text="Transaksi akan muncul setelah tamu memesan dan kasir memvalidasi."
           />
+        )}
+      </div>
+
+      <div className="panel" style={{ marginTop: 16 }}>
+        <div className="row-between wrap" style={{ marginBottom: 6 }}>
+          <div>
+            <h3 className="panel-title">Audit void / refund</h3>
+            <p className="panel-sub">Jejak aksi sensitif kasir pada rentang waktu ini, lengkap dengan alasannya.</p>
+          </div>
+          <span className="badge-soft">{auditsInRange.length} catatan</span>
+        </div>
+
+        {auditsInRange.length === 0 ? (
+          <EmptyState
+            emoji="🛡️"
+            title="Tidak ada void / refund"
+            text="Setiap void atau refund pesanan akan tercatat otomatis di sini."
+          />
+        ) : (
+          <div className="audit-list">
+            {auditsInRange.map((entry) => (
+              <div
+                className="audit-row"
+                key={entry.id}
+                role="button"
+                tabIndex={0}
+                style={{ cursor: 'pointer' }}
+                onClick={() => router.push(`/staff/kasir/order/${entry.orderId}`)}
+              >
+                <span className={`audit-icon ${entry.action}`}>
+                  <IonIcon icon={shieldCheckmarkOutline} />
+                </span>
+                <div className="grow">
+                  <div className="row-between wrap">
+                    <strong className="small">{entry.orderCode}</strong>
+                    <span className="muted small">{formatDateTime(entry.at)}</span>
+                  </div>
+                  <div className="muted small">
+                    {entry.action === 'refund'
+                      ? `Refund ${rupiah(entry.amount)} via ${entry.method.toUpperCase()}`
+                      : 'Void tanpa refund'}{' '}
+                    • {entry.by}
+                  </div>
+                  <p className="muted small" style={{ margin: '4px 0 0' }}>
+                    {entry.reason}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </StaffShell>

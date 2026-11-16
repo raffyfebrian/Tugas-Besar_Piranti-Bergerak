@@ -7,6 +7,10 @@ export const rupiah = (value: number): string =>
     maximumFractionDigits: 0,
   }).format(value);
 
+/** Angka stok dengan maksimal dua desimal, tanpa nol yang tidak perlu. */
+export const formatQty = (value: number): string =>
+  new Intl.NumberFormat('id-ID', { maximumFractionDigits: 2 }).format(value);
+
 export const formatDateTime = (iso: string): string =>
   new Intl.DateTimeFormat('id-ID', {
     day: '2-digit',

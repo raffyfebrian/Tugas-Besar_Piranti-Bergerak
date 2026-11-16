@@ -82,7 +82,7 @@ const OrderMenu: React.FC = () => {
       </div>
 
       {items.length ? (
-        <div className="menu-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(165px, 1fr))' }}>
+        <div className="menu-grid">
           {items.map((item, index) => {
             const qty = state.cart.find((line) => line.menuId === item.id)?.qty ?? 0;
             return (

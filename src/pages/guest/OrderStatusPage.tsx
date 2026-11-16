@@ -3,18 +3,32 @@ import {
   arrowForwardOutline,
   checkmarkOutline,
   homeOutline,
+  notificationsOffOutline,
+  notificationsOutline,
   printOutline,
   receiptOutline,
   searchOutline,
+  timerOutline,
 } from 'ionicons/icons';
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { GuestShell } from '../../components/GuestShell';
 import { StatusBadge } from '../../components/StatusBadge';
+import { useOrderStatusNotice } from '../../hooks/useOrderStatusNotice';
 import { useApp } from '../../store/AppStore';
 import type { Order, OrderStatus } from '../../types';
-import { formatDateTime, paymentLabel, rupiah, statusLabel } from '../../utils/format';
+import { estimateOrderEta } from '../../utils/eta';
+import { formatDateTime, formatTime, paymentLabel, rupiah, statusLabel } from '../../utils/format';
+import { playOrderChime } from '../../utils/notify';
+import {
+  isNotificationEnabled,
+  notificationPermission,
+  notificationsSupported,
+  requestNotificationPermission,
+  setNotificationEnabled,
+} from '../../utils/statusNotify';
+import type { NotificationPermissionState } from '../../utils/statusNotify';
 
 const FLOW: OrderStatus[] = [
   'menunggu_pembayaran',
@@ -41,10 +55,66 @@ const GuestOrderStatus: React.FC = () => {
   const router = useIonRouter();
   const [present] = useIonToast();
   const [query, setQuery] = useState('');
+  const [now, setNow] = useState(() => Date.now());
+  const [notifyState, setNotifyState] = useState<NotificationPermissionState>('prompt');
+  const [notifyEnabled, setNotifyEnabledState] = useState(() => isNotificationEnabled());
 
   const order: Order | undefined = id
     ? state.orders.find((item) => item.id === id || item.code.toLowerCase() === id.toLowerCase())
     : undefined;
+
+  const trackedId = order?.id ?? '';
+  const trackedStatus = order?.status;
+
+  useEffect(() => {
+    void notificationPermission().then(setNotifyState);
+  }, []);
+
+  // Segarkan estimasi tiap 30 detik agar sisa menit ikut berjalan.
+  useEffect(() => {
+    if (!trackedId || trackedStatus === 'selesai' || trackedStatus === 'dibatalkan') return undefined;
+    const timer = window.setInterval(() => setNow(Date.now()), 30000);
+    return () => window.clearInterval(timer);
+  }, [trackedId, trackedStatus]);
+
+  const handleStatusChange = useCallback(
+    (next: Order) => {
+      playOrderChime();
+      void present({
+        message: `Status pesanan diperbarui: ${statusLabel[next.status]}`,
+        duration: 2600,
+        color: next.status === 'dibatalkan' ? 'danger' : 'success',
+        position: 'top',
+      });
+    },
+    [present],
+  );
+
+  useOrderStatusNotice(order, handleStatusChange);
+
+  const enableNotifications = async () => {
+    const permission = await requestNotificationPermission();
+    setNotifyState(permission);
+    if (permission === 'granted') {
+      setNotificationEnabled(true);
+      setNotifyEnabledState(true);
+      void present({
+        message: 'Notifikasi status diaktifkan.',
+        duration: 1800,
+        color: 'success',
+        position: 'top',
+      });
+      return;
+    }
+    if (permission === 'denied') {
+      void present({
+        message: 'Izin notifikasi diblokir. Aktifkan lewat pengaturan perangkat.',
+        duration: 2600,
+        color: 'warning',
+        position: 'top',
+      });
+    }
+  };
 
   const search = (event: React.FormEvent) => {
     event.preventDefault();
@@ -126,6 +196,15 @@ const GuestOrderStatus: React.FC = () => {
   const cancelled = order.status === 'dibatalkan';
   const completed = order.status === 'selesai';
   const canPay = order.status === 'menunggu_pembayaran';
+  const active = !cancelled && !completed;
+  const eta = estimateOrderEta(order, state.orders, now);
+  const flowIndex = FLOW.indexOf(order.status);
+  const progressPercent = cancelled
+    ? 0
+    : completed
+      ? 100
+      : Math.max(6, Math.round((flowIndex / (FLOW.length - 1)) * 100));
+  const showNotifyPrompt = active && notificationsSupported() && !notifyEnabled;
 
   return (
     <GuestShell title="Status Pesanan" backHref="/order/menu" showCart={!completed}>
@@ -159,8 +238,63 @@ const GuestOrderStatus: React.FC = () => {
         </div>
       </div>
 
+      {eta && active && (
+        <div className="panel eta-panel" style={{ marginBottom: 14 }} aria-live="polite">
+          <span className="eta-icon" aria-hidden="true">
+            <IonIcon icon={timerOutline} />
+          </span>
+          <div className="eta-copy">
+            <span className="section-kicker">Estimasi tiba di kamar</span>
+            <strong className="eta-minutes">±{eta.minutes} menit</strong>
+            <span className="eta-clock">
+              Sekitar {formatTime(eta.readyAt.toISOString())} • Kamar {order.room}
+            </span>
+          </div>
+          <span className="eta-pulse" aria-hidden="true" />
+        </div>
+      )}
+
+      {showNotifyPrompt && (
+        <div className="panel notify-panel" style={{ marginBottom: 14 }}>
+          <span className="notify-icon" aria-hidden="true">
+            <IonIcon icon={notifyState === 'denied' ? notificationsOffOutline : notificationsOutline} />
+          </span>
+          <div className="notify-copy">
+            <strong>Notifikasi status pesanan</strong>
+            <p>
+              {notifyState === 'denied'
+                ? 'Izin notifikasi diblokir. Aktifkan lewat pengaturan browser atau perangkat.'
+                : 'Aktifkan agar Anda tahu saat pesanan siap diantar, tanpa perlu terus membuka halaman ini.'}
+            </p>
+          </div>
+          {notifyState !== 'denied' && (
+            <IonButton size="small" fill="outline" onClick={enableNotifications}>
+              Aktifkan
+            </IonButton>
+          )}
+        </div>
+      )}
+
       <div className="panel" style={{ marginBottom: 14 }}>
         <h3 className="panel-title">Progres pesanan</h3>
+
+        <div className="flow-progress">
+          <div className="flow-progress-head">
+            <span>{cancelled ? 'Pesanan dibatalkan' : `Tahap ${Math.max(1, flowIndex + 1)} dari ${FLOW.length}`}</span>
+            <strong>{progressPercent}%</strong>
+          </div>
+          <div
+            className={`progress-track${completed ? ' is-complete' : ''}${cancelled ? ' is-cancelled' : ''}`}
+            role="progressbar"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progressPercent}
+            aria-label="Progres pesanan"
+          >
+            <span className="progress-fill" style={{ width: `${progressPercent}%` }} />
+          </div>
+        </div>
+
         <div className="timeline" style={{ marginTop: 14 }} key={order.status} aria-live="polite">
           {(cancelled
             ? order.timeline

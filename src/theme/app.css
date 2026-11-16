@@ -2574,6 +2574,343 @@ a {
 }
 
 /* ============================================================
+   Transisi halaman
+   ============================================================ */
+#public-content::part(scroll),
+#guest-content::part(scroll),
+#staff-content::part(scroll) {
+  animation: pageEnter 0.36s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ============================================================
+   Skeleton loading
+   ============================================================ */
+.skeleton {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #e2ebe6;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  animation: skeletonShimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeletonShimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeleton-line {
+  height: 12px;
+  width: 100%;
+  margin-bottom: 10px;
+}
+
+.skeleton-line-kicker {
+  width: 34%;
+  height: 10px;
+}
+
+.skeleton-line-title {
+  width: 88%;
+  height: 30px;
+  margin-bottom: 12px;
+}
+
+.skeleton-line-short {
+  width: 62%;
+}
+
+.skeleton-line-price {
+  width: 45%;
+  height: 14px;
+  margin-bottom: 0;
+}
+
+.menu-skeleton {
+  grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+}
+
+.menu-skeleton-card {
+  padding: 10px;
+  border-radius: 18px;
+  border: 1px solid var(--ngoffe-line);
+  background: #fff;
+}
+
+.skeleton-thumb {
+  height: 108px;
+  margin-bottom: 10px;
+  border-radius: 12px;
+}
+
+.page-skeleton {
+  padding: 24px 0 48px;
+}
+
+.skeleton-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin: 18px 0;
+}
+
+.skeleton-kpi {
+  height: 92px;
+  border-radius: 16px;
+}
+
+.skeleton-panel {
+  height: 190px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+}
+
+.skeleton-panel-short {
+  height: 120px;
+}
+
+.showcase3d-skeleton .skeleton {
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.showcase3d-skeleton .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(159, 220, 185, 0.22), transparent);
+}
+
+.skeleton-stage {
+  display: grid;
+  place-items: center;
+}
+
+.skeleton-card {
+  width: min(220px, 48vw);
+  height: 252px;
+  border-radius: 20px;
+}
+
+/* ============================================================
+   Estimasi tiba & progres pesanan
+   ============================================================ */
+.eta-panel {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background:
+    radial-gradient(circle at 92% 12%, rgba(126, 214, 165, 0.34), transparent 44%),
+    linear-gradient(135deg, #f4fbf7 0%, #e5f2ea 100%);
+  border: 1px solid rgba(31, 92, 69, 0.16);
+}
+
+.eta-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 48px;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  font-size: 1.35rem;
+  color: #fff;
+  background: linear-gradient(145deg, #2a7d5e, #1f5c45);
+  box-shadow: 0 12px 24px rgba(31, 92, 69, 0.26);
+}
+
+.eta-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.eta-minutes {
+  font-size: 1.5rem;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ngoffe-forest);
+}
+
+.eta-clock {
+  font-size: 0.74rem;
+  color: var(--ngoffe-muted);
+}
+
+.eta-pulse {
+  position: absolute;
+  top: 50%;
+  right: 18px;
+  width: 10px;
+  height: 10px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--ngoffe-accent);
+  animation: etaPulse 2.1s ease-out infinite;
+}
+
+@keyframes etaPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(42, 125, 94, 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(42, 125, 94, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(42, 125, 94, 0);
+  }
+}
+
+.notify-panel {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.notify-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #eaf3ed;
+  color: var(--ngoffe-forest);
+  font-size: 1.1rem;
+}
+
+.notify-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.notify-copy strong {
+  display: block;
+  font-size: 0.84rem;
+}
+
+.notify-copy p {
+  margin: 3px 0 0;
+  font-size: 0.74rem;
+  line-height: 1.5;
+  color: var(--ngoffe-muted);
+}
+
+.flow-progress {
+  margin-top: 14px;
+}
+
+.flow-progress-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--ngoffe-muted);
+}
+
+.flow-progress-head strong {
+  color: var(--ngoffe-forest);
+}
+
+.progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: #e2ece6;
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #2a7d5e, #7ed6a5);
+  transition: width 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  animation: progressSheen 2.4s ease-in-out infinite;
+}
+
+.progress-track.is-complete .progress-fill {
+  background: linear-gradient(90deg, #2a7d5e, #a7e8c3);
+}
+
+.progress-track.is-cancelled .progress-fill {
+  background: #c07a6c;
+}
+
+@keyframes progressSheen {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.timeline-item.done::before {
+  background: var(--ion-color-primary);
+  transform-origin: top;
+  animation: lineGrow 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.timeline-item.current::before {
+  background: linear-gradient(
+    to bottom,
+    var(--ngoffe-accent) 0%,
+    var(--ngoffe-accent) 34%,
+    #d7e5dc 34%,
+    #d7e5dc 100%
+  );
+}
+
+@keyframes lineGrow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@media (max-width: 640px) {
+  .skeleton-kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .notify-panel {
+    flex-wrap: wrap;
+  }
+  .notify-panel ion-button {
+    margin-left: 52px;
+  }
+}
+
+/* ============================================================
    Kurangi gerak bila diminta pengguna
    ============================================================ */
 @media (prefers-reduced-motion: reduce) {

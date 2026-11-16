@@ -1,13 +1,16 @@
 import { IonButton, IonIcon } from '@ionic/react';
 import { arrowForwardOutline, cafeOutline, qrCodeOutline } from 'ionicons/icons';
-import React from 'react';
+import React, { Suspense } from 'react';
 
 import { CountUp } from '../../components/CountUp';
 import { MenuCard } from '../../components/MenuCard';
 import { PublicShell } from '../../components/PublicShell';
-import Showcase3D from '../../components/Showcase3D';
+import { ShowcaseSkeleton } from '../../components/Skeleton';
 import { useApp } from '../../store/AppStore';
 import { averageDeliveryMinutes } from '../../utils/format';
+
+// Panggung 3D cukup berat; dimuat terpisah agar hero dan menu tampil lebih dulu.
+const Showcase3D = React.lazy(() => import('../../components/Showcase3D'));
 
 const STEPS = [
   { title: 'Scan QR Kamar', text: 'Arahkan kamera ke QR code yang ada di kamar hotel.' },
@@ -119,7 +122,9 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      <Showcase3D />
+      <Suspense fallback={<ShowcaseSkeleton />}>
+        <Showcase3D />
+      </Suspense>
 
       <section className="section container">
         <div className="section-head">

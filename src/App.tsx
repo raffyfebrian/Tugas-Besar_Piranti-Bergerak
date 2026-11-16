@@ -1,27 +1,17 @@
 import { IonApp, IonRouterOutlet, setupIonicReact } from '@ionic/react';
 import { IonReactRouter } from '@ionic/react-router';
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Navigate, Route } from 'react-router-dom';
 
 import DeepLinkBridge from './components/DeepLinkBridge';
 import { PublicMenu } from './components/PublicMenu';
+import { PageSkeleton } from './components/Skeleton';
 import { StaffMenu } from './components/StaffMenu';
-import AdminDashboard from './pages/admin/AdminDashboard';
-import AdminMenu from './pages/admin/AdminMenu';
-import AdminReports from './pages/admin/AdminReports';
-import AdminRooms from './pages/admin/AdminRooms';
-import AdminSettings from './pages/admin/AdminSettings';
-import AdminStaff from './pages/admin/AdminStaff';
-import AdminStock from './pages/admin/AdminStock';
 import Cart from './pages/guest/Cart';
 import OrderMenu from './pages/guest/OrderMenu';
 import GuestOrderStatus from './pages/guest/OrderStatusPage';
-import Payment from './pages/guest/Payment';
 import Scan from './pages/guest/Scan';
-import KasirOrderDetail from './pages/kasir/KasirOrderDetail';
 import KasirOrders from './pages/kasir/KasirOrders';
-import KasirTransactions from './pages/kasir/KasirTransactions';
-import Kitchen from './pages/kitchen/Kitchen';
 import About from './pages/public/About';
 import Contact from './pages/public/Contact';
 import Gallery from './pages/public/Gallery';
@@ -52,6 +42,27 @@ import '@ionic/react/css/display.css';
 /* Tema Ngoffe ID */
 import './theme/variables.css';
 import './theme/app.css';
+
+/*
+ * Halaman staf dan admin dimuat terpisah (code splitting). Selain memperkecil
+ * bundle awal, fallback Suspense memberi kerangka skeleton yang terlihat wajar
+ * di perangkat lambat maupun saat koneksi lambat pada versi web.
+ */
+const AdminDashboard = React.lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminMenu = React.lazy(() => import('./pages/admin/AdminMenu'));
+const AdminReports = React.lazy(() => import('./pages/admin/AdminReports'));
+const AdminRooms = React.lazy(() => import('./pages/admin/AdminRooms'));
+const AdminSettings = React.lazy(() => import('./pages/admin/AdminSettings'));
+const AdminStaff = React.lazy(() => import('./pages/admin/AdminStaff'));
+const AdminStock = React.lazy(() => import('./pages/admin/AdminStock'));
+const Kitchen = React.lazy(() => import('./pages/kitchen/Kitchen'));
+const KasirOrderDetail = React.lazy(() => import('./pages/kasir/KasirOrderDetail'));
+const KasirTransactions = React.lazy(() => import('./pages/kasir/KasirTransactions'));
+const Payment = React.lazy(() => import('./pages/guest/Payment'));
+
+const Loading: React.FC<React.PropsWithChildren> = ({ children }) => (
+  <Suspense fallback={<PageSkeleton />}>{children}</Suspense>
+);
 
 setupIonicReact();
 
@@ -85,7 +96,14 @@ const Routes: React.FC = () => (
       <Route path="/order" element={<Scan />} />
       <Route path="/order/menu" element={<OrderMenu />} />
       <Route path="/order/cart" element={<Cart />} />
-      <Route path="/order/payment/:id" element={<Payment />} />
+      <Route
+        path="/order/payment/:id"
+        element={
+          <Loading>
+            <Payment />
+          </Loading>
+        }
+      />
       <Route path="/order/status" element={<GuestOrderStatus />} />
       <Route path="/order/status/:id" element={<GuestOrderStatus />} />
 
@@ -105,7 +123,9 @@ const Routes: React.FC = () => (
         path="/staff/kasir/transactions"
         element={
           <RequireRole roles={['kasir', 'admin']}>
-            <KasirTransactions />
+            <Loading>
+              <KasirTransactions />
+            </Loading>
           </RequireRole>
         }
       />
@@ -113,7 +133,9 @@ const Routes: React.FC = () => (
         path="/staff/kasir/order/:id"
         element={
           <RequireRole roles={['kasir', 'admin']}>
-            <KasirOrderDetail />
+            <Loading>
+              <KasirOrderDetail />
+            </Loading>
           </RequireRole>
         }
       />
@@ -123,7 +145,9 @@ const Routes: React.FC = () => (
         path="/staff/kitchen"
         element={
           <RequireRole roles={['kitchen', 'admin']}>
-            <Kitchen />
+            <Loading>
+              <Kitchen />
+            </Loading>
           </RequireRole>
         }
       />
@@ -133,7 +157,9 @@ const Routes: React.FC = () => (
         path="/admin"
         element={
           <RequireRole roles={['admin']}>
-            <AdminDashboard />
+            <Loading>
+              <AdminDashboard />
+            </Loading>
           </RequireRole>
         }
       />
@@ -141,7 +167,9 @@ const Routes: React.FC = () => (
         path="/admin/menu"
         element={
           <RequireRole roles={['admin']}>
-            <AdminMenu />
+            <Loading>
+              <AdminMenu />
+            </Loading>
           </RequireRole>
         }
       />
@@ -149,7 +177,9 @@ const Routes: React.FC = () => (
         path="/admin/rooms"
         element={
           <RequireRole roles={['admin']}>
-            <AdminRooms />
+            <Loading>
+              <AdminRooms />
+            </Loading>
           </RequireRole>
         }
       />
@@ -157,7 +187,9 @@ const Routes: React.FC = () => (
         path="/admin/staff"
         element={
           <RequireRole roles={['admin']}>
-            <AdminStaff />
+            <Loading>
+              <AdminStaff />
+            </Loading>
           </RequireRole>
         }
       />
@@ -165,7 +197,9 @@ const Routes: React.FC = () => (
         path="/admin/stock"
         element={
           <RequireRole roles={['admin']}>
-            <AdminStock />
+            <Loading>
+              <AdminStock />
+            </Loading>
           </RequireRole>
         }
       />
@@ -173,7 +207,9 @@ const Routes: React.FC = () => (
         path="/admin/reports"
         element={
           <RequireRole roles={['admin']}>
-            <AdminReports />
+            <Loading>
+              <AdminReports />
+            </Loading>
           </RequireRole>
         }
       />
@@ -181,7 +217,9 @@ const Routes: React.FC = () => (
         path="/admin/settings"
         element={
           <RequireRole roles={['admin']}>
-            <AdminSettings />
+            <Loading>
+              <AdminSettings />
+            </Loading>
           </RequireRole>
         }
       />

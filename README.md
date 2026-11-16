@@ -23,6 +23,10 @@ Aplikasi ini mengikuti spesifikasi `penjelasan_sistem_ngoffe_id.md`:
 - **Bagikan struk** dari detail pesanan kasir lewat dialog berbagi Android/Web Share, dengan fallback salin ke clipboard.
 - **Layar dapur tetap menyala** memakai Screen Wake Lock API selama antrean dipantau.
 - **Showcase 3D di beranda**: karusel menu signature berputar dalam ruang 3D, bisa digeser (mouse/sentuh) dengan inersia, tombol putar, dan auto-rotate yang berhenti saat kursor di atas panggung.
+- **Estimasi tiba (ETA)** di halaman status: sisa menit dan jam perkiraan tiba, dihitung dari lama penyiapan tiket + antrean dapur yang lebih dulu + waktu antar, dan disegarkan tiap 30 detik.
+- **Notifikasi status pesanan**: tamu bisa mengaktifkan notifikasi (plugin `@capacitor/local-notifications` di APK, Web Notifications di browser) agar tetap tahu saat pesanan siap diantar walau halaman tidak dibuka; perubahan status juga memunculkan toast + nada singkat.
+- **Skeleton loading + code splitting**: halaman staf/admin, pembayaran, dan panggung 3D dimuat terpisah dengan fallback shimmer skeleton, sehingga layar awal terasa lebih cepat.
+- **Transisi halaman dan timeline beranimasi**: konten masuk halus, garis timeline tumbuh bertahap, dan ada progress bar tahap pesanan dengan persentase.
 
 > Catatan: prototipe ini **tanpa backend**. Seluruh data disimpan di `localStorage` browser (`ngoffe-ionic-state-v1`) dan sudah berisi data demo.
 
@@ -193,10 +197,18 @@ Semua panggilan native dibungkus `Capacitor.isNativePlatform()` di `src/utils/na
 | Suara dapur | Kitchen ikut berbunyi saat ada pesanan baru masuk antrean; preferensi **Suara Aktif/Mati** dibagi bersama kasir (`ngoffe-sound`). |
 | Bagikan struk | Tombol **Bagikan** di panel Struk Digital memakai `@capacitor/share` (dialog berbagi Android), lalu `navigator.share`, lalu salin ke clipboard. |
 | Layar dapur | Screen Wake Lock API menahan layar tetap menyala selama halaman Kitchen aktif; preferensi disimpan di `ngoffe-keep-awake`. |
+| Notifikasi status | `@capacitor/local-notifications` menampilkan notifikasi sistem saat status pesanan berubah; channel `ngoffe-status`, izin `POST_NOTIFICATIONS` sudah dideklarasikan plugin. Di web memakai `Notification` API. |
 
 Animasi mikro memakai Web Animations API + CSS (`src/utils/flyToCart.ts`, `src/components/CountUp.tsx`) dan otomatis dinonaktifkan saat pengguna mengaktifkan *reduce motion*.
 
 Showcase 3D beranda (`src/components/Showcase3D.tsx`) dibangun murni dengan CSS `transform-style: preserve-3d` + `requestAnimationFrame`, tanpa library 3D tambahan. Enam kartu disusun melingkar (`rotateY` + `translateZ`), opacity tiap kartu dihitung dari sudutnya agar kedalaman terasa, dan auto-rotate berhenti saat kursor berada di panggung atau saat *reduce motion* aktif. Menu dipilih lewat `pickSignatureItems` supaya tiap kategori terwakili.
+
+### Estimasi tiba, notifikasi, dan skeleton
+
+- **ETA** dihitung `estimateOrderEta` (`src/utils/eta.ts`): `BASE_PREP_MINUTES` + `PER_ITEM_MINUTES` per item tambahan (maksimal 28 menit), ditambah sisa waktu tiket lain yang lebih dulu masuk antrean dapur, ditambah `DELIVERY_MINUTES`, lalu dibatasi `MAX_TOTAL_MINUTES` (45 menit). Status `menunggu_pembayaran`, `selesai`, dan `dibatalkan` tidak diberi ETA.
+- **Notifikasi status** memakai `src/utils/statusNotify.ts` + `useOrderStatusNotice`. Di native memakai `LocalNotifications` dengan channel `ngoffe-status`; di web memakai `Notification` API dan hanya muncul saat tab tidak terlihat. Preferensi tamu disimpan di `ngoffe-notify-enabled` dan baru dianggap aktif setelah izin diberikan.
+- **Skeleton** berasal dari `React.lazy` + `Suspense` (`src/components/Skeleton.tsx`): `PageSkeleton` untuk halaman staf/admin/pembayaran, `ShowcaseSkeleton` untuk panggung 3D, dan `MenuGridSkeleton` untuk daftar menu.
+- **Transisi dan timeline** murni CSS di `src/theme/app.css`: `pageEnter` pada `ion-content::part(scroll)`, `skeletonShimmer` pada balok skeleton, `lineGrow` pada garis timeline yang selesai, gradien parsial untuk tahap aktif, serta `progress-fill` dengan sheen. Semua animasi ikut berhenti saat *prefers-reduced-motion*.
 
 ### Ikon, splash, dan deep link QR
 

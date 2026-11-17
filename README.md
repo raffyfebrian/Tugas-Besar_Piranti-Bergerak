@@ -34,6 +34,7 @@ Aplikasi ini mengikuti spesifikasi `penjelasan_sistem_ngoffe_id.md`:
 - **Riwayat pesanan kamar + "Pesan lagi"**: halaman status menampilkan pesanan terakhir dari kamar tamu (maksimal 8), lengkap dengan status, rincian item, dan ulasan; satu ketukan menambahkan semua item lama ke keranjang (menu habis otomatis dilewati).
 - **Rating bintang & ulasan tamu**: setelah pesanan `selesai`, tamu dapat memberi 1–5 bintang plus komentar; hasilnya tampil di **Admin → Laporan** sebagai KPI rating, grafik distribusi bintang, rating per menu terlaris, dan daftar ulasan terbaru.
 - **Konfeti & animasi ulasan**: kiriman ulasan memicu hujan konfeti singkat, bintang meletup, dan kartu riwayat muncul berurutan; semua animasi berhenti saat *reduce motion* aktif.
+- **Swipe-to-delete + Undo + FLIP di keranjang**: geser item ke kiri untuk menghapus, baris lain meluncur halus mengisi tempatnya (FLIP), lalu toast **Undo** mengembalikan item persis di posisi semula (jumlah & catatan ikut tersimpan). Tombol hapus tetap tersedia dan memakai jalur Undo yang sama.
 
 > Catatan: prototipe ini **tanpa backend**. Seluruh data disimpan di `localStorage` browser (`ngoffe-ionic-state-v1`) dan sudah berisi data demo.
 
@@ -232,6 +233,12 @@ Showcase 3D beranda (`src/components/Showcase3D.tsx`) dibangun murni dengan CSS 
 - **Pesan lagi** (`reorder` di `AppStore`): item pesanan lama digabung ke keranjang (jumlah ditambahkan bila menu sama, catatan ikut disalin); menu yang sedang tidak tersedia dilewati agar keranjang tetap valid.
 - **Ulasan tamu** (`Order.feedback`, `submitFeedback`): rating 1–5 + komentar opsional, disimpan sekali per pesanan saat status `selesai`. Helper di `src/utils/feedback.ts` menghitung rata-rata, distribusi bintang, rating per menu, dan ulasan terbaru.
 - **Komponen bersama**: `StarRating` (mode tampil & interaktif) dan `Confetti` (portal ke `document.body`, 30 keping, bersih sendiri setelah ±2,6 detik). Data demo di `src/data/seed.ts` sudah memuat tiga ulasan agar laporan langsung terisi.
+
+### Swipe-to-delete, Undo, dan FLIP keranjang
+
+- **Geser hapus** (`src/components/SwipeToDelete.tsx`): gesture pointer (sentuh & mouse) dengan ambang 72 px dan batas geser 120 px. Scroll vertikal membatalkan geseran, tombol/stepper/textarea tidak memicu gesture, dan background merah muda muncul saat item ditarik. Saat dilepas, baris beranimasi keluar; timer cadangan memastikan item tetap terhapus walau tab tidak aktif menahan animation frame.
+- **Undo** (`restoreCartLine` di `AppStore` + toast di `src/pages/guest/Cart.tsx`): baris yang dihapus disimpan sementara bersama indeks asalnya. Tombol Undo menyisipkannya kembali tepat di posisi semula beserta `qty` dan `note`; tombol ini sengaja tanpa `role: "cancel"` agar handler dipanggil langsung oleh Ionic. Toast otomatis hilang setelah 4 detik.
+- **FLIP reflow** (`src/hooks/useFlipRows.ts`): posisi setiap baris (`data-flip-key`) direkam sebelum state berubah, lalu setelah commit baris yang bergeser dianimasikan dari posisi lama ke posisi baru (320 ms, `cubic-bezier(0.22, 1, 0.36, 1)`). Berhenti otomatis saat *reduce motion* aktif.
 
 ### Operasional dapur, stok, dan kas
 

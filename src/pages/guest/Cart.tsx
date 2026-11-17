@@ -1,12 +1,14 @@
 import { IonButton, IonIcon, IonInput, IonTextarea, useIonRouter, useIonToast } from '@ionic/react';
 import { cashOutline, qrCodeOutline, trashOutline } from 'ionicons/icons';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
 import { QtyStepper } from '../../components/FakeQr';
 import { GuestShell } from '../../components/GuestShell';
+import { SwipeToDelete } from '../../components/SwipeToDelete';
+import { useFlipRows } from '../../hooks/useFlipRows';
 import { useApp } from '../../store/AppStore';
-import type { PaymentMethod } from '../../types';
+import type { CartLine, PaymentMethod } from '../../types';
 import { rupiah } from '../../utils/format';
 
 const Cart: React.FC = () => {
@@ -15,6 +17,7 @@ const Cart: React.FC = () => {
     addToCart,
     decrementCart,
     removeFromCart,
+    restoreCartLine,
     setLineNote,
     setGuestName,
     cartCount,
@@ -24,8 +27,23 @@ const Cart: React.FC = () => {
   const router = useIonRouter();
   const [present] = useIonToast();
   const [payment, setPayment] = useState<PaymentMethod>('qris');
+  const listRef = useRef<HTMLDivElement>(null);
+  const captureFlip = useFlipRows(listRef);
 
   if (!state.room) return <Navigate to="/order" replace />;
+
+  const deleteLine = (line: CartLine, index: number, name: string) => {
+    // Rekam posisi sebelum state berubah supaya baris lain bisa meluncur (FLIP).
+    captureFlip();
+    removeFromCart(line.menuId);
+    void present({
+      message: `${name} dihapus dari keranjang.`,
+      duration: 4000,
+      color: 'medium',
+      position: 'bottom',
+      buttons: [{ text: 'Undo', handler: () => restoreCartLine(line, index) }],
+    });
+  };
 
   const submit = () => {
     const order = placeOrder(payment);
@@ -47,7 +65,7 @@ const Cart: React.FC = () => {
         <div>
           <div className="room-chip">🛏️ Kamar {state.room}</div>
           <p className="muted small" style={{ margin: '8px 0 0' }}>
-            Periksa pesanan sebelum melanjutkan.
+            Periksa pesanan sebelum melanjutkan. Geser item ke kiri untuk menghapus.
           </p>
         </div>
         <IonButton fill="clear" size="small" routerLink="/order/menu">
@@ -66,49 +84,56 @@ const Cart: React.FC = () => {
         </div>
       ) : (
         <div className="stack">
-          <div className="panel">
-            {state.cart.map((line) => {
+          <div className="panel" ref={listRef}>
+            {state.cart.map((line, index) => {
               const item = state.menu.find((menu) => menu.id === line.menuId);
               if (!item) return null;
               return (
-                <div className="cart-line" key={line.menuId}>
-                  <div className="cart-thumb" style={{ background: item.gradient }}>
-                    {item.emoji}
-                  </div>
-                  <div className="grow">
-                    <div className="row-between">
-                      <div>
-                        <h4>{item.name}</h4>
-                        <span className="price small">{rupiah(item.price)}</span>
+                <SwipeToDelete
+                  key={line.menuId}
+                  flipKey={line.menuId}
+                  onDelete={() => deleteLine(line, index, item.name)}
+                >
+                  <div className="cart-line">
+                    <div className="cart-thumb" style={{ background: item.gradient }}>
+                      {item.emoji}
+                    </div>
+                    <div className="grow">
+                      <div className="row-between">
+                        <div>
+                          <h4>{item.name}</h4>
+                          <span className="price small">{rupiah(item.price)}</span>
+                        </div>
+                        <button
+                          type="button"
+                          className="icon-btn danger"
+                          onPointerDown={(event) => event.stopPropagation()}
+                          onClick={() => deleteLine(line, index, item.name)}
+                          aria-label={`Hapus ${item.name}`}
+                        >
+                          <IonIcon icon={trashOutline} />
+                        </button>
                       </div>
-                      <button
-                        type="button"
-                        className="icon-btn danger"
-                        onClick={() => removeFromCart(item.id)}
-                        aria-label={`Hapus ${item.name}`}
-                      >
-                        <IonIcon icon={trashOutline} />
-                      </button>
-                    </div>
-                    <div className="row-between" style={{ marginTop: 8 }}>
-                      <QtyStepper
-                        qty={line.qty}
-                        onAdd={() => addToCart(item.id)}
-                        onRemove={() => decrementCart(item.id)}
-                        min={1}
+                      <div className="row-between" style={{ marginTop: 8 }}>
+                        <QtyStepper
+                          qty={line.qty}
+                          onAdd={() => addToCart(item.id)}
+                          onRemove={() => decrementCart(item.id)}
+                          min={1}
+                        />
+                        <strong className="small">{rupiah(item.price * line.qty)}</strong>
+                      </div>
+                      <IonTextarea
+                        className="cart-note"
+                        placeholder="Catatan (mis. tanpa gula, extra shot)…"
+                        autoGrow
+                        rows={1}
+                        value={line.note}
+                        onIonInput={(event) => setLineNote(item.id, event.detail.value ?? '')}
                       />
-                      <strong className="small">{rupiah(item.price * line.qty)}</strong>
                     </div>
-                    <IonTextarea
-                      className="cart-note"
-                      placeholder="Catatan (mis. tanpa gula, extra shot)…"
-                      autoGrow
-                      rows={1}
-                      value={line.note}
-                      onIonInput={(event) => setLineNote(item.id, event.detail.value ?? '')}
-                    />
                   </div>
-                </div>
+                </SwipeToDelete>
               );
             })}
           </div>

@@ -1103,6 +1103,51 @@ a {
   margin-top: 8px;
 }
 
+/* Geser item keranjang ke kiri untuk menghapus */
+.swipe-row {
+  position: relative;
+  overflow: hidden;
+  margin: 0 -4px;
+  border-bottom: 1px solid var(--ngoffe-line);
+  border-radius: 12px;
+}
+
+.swipe-row:last-child {
+  border-bottom: 0;
+}
+
+.swipe-row .cart-line {
+  border-bottom: 0;
+  padding: 14px 4px;
+}
+
+.swipe-bg {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 20px;
+  background: linear-gradient(90deg, #fff3f1, #f6d3ce);
+  color: #b03b2e;
+  font-size: 1.35rem;
+  transition: opacity 0.12s linear;
+}
+
+.swipe-front {
+  position: relative;
+  background: #fff;
+  touch-action: pan-y;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .swipe-front,
+  .swipe-bg {
+    transition: none;
+  }
+}
+
 .summary-row {
   display: flex;
   justify-content: space-between;

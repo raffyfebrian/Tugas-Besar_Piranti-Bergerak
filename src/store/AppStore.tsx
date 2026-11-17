@@ -72,6 +72,8 @@ interface AppContextValue {
   decrementCart: (menuId: string) => void;
   setQty: (menuId: string, qty: number) => void;
   removeFromCart: (menuId: string) => void;
+  /** Kembalikan baris yang dihapus, misalnya dari tombol Undo. */
+  restoreCartLine: (line: CartLine, index: number) => void;
   setLineNote: (menuId: string, note: string) => void;
   clearCart: () => void;
   /** Tambahkan ulang item pesanan lama ke keranjang; mengembalikan jumlah item yang masuk. */
@@ -198,6 +200,15 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
 
   const removeFromCart = useCallback((menuId: string) => {
     setState((prev) => ({ ...prev, cart: prev.cart.filter((line) => line.menuId !== menuId) }));
+  }, []);
+
+  const restoreCartLine = useCallback((line: CartLine, index: number) => {
+    setState((prev) => {
+      if (prev.cart.some((item) => item.menuId === line.menuId)) return prev;
+      const cart = [...prev.cart];
+      cart.splice(Math.max(0, Math.min(index, cart.length)), 0, line);
+      return { ...prev, cart };
+    });
   }, []);
 
   const setLineNote = useCallback((menuId: string, note: string) => {
@@ -663,6 +674,7 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       decrementCart,
       setQty,
       removeFromCart,
+      restoreCartLine,
       setLineNote,
       clearCart,
       reorder,
@@ -703,6 +715,7 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       decrementCart,
       setQty,
       removeFromCart,
+      restoreCartLine,
       setLineNote,
       clearCart,
       reorder,

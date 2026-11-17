@@ -4,13 +4,16 @@ import {
   downloadOutline,
   qrCodeOutline,
   receiptOutline,
+  star,
   statsChartOutline,
   walletOutline,
 } from 'ionicons/icons';
 import React, { useMemo, useState } from 'react';
 
 import { StaffShell } from '../../components/StaffShell';
+import { StarRating } from '../../components/StarRating';
 import { useApp } from '../../store/AppStore';
+import { latestReviews, menuRatingMap, ratingDistribution, summarizeRatings } from '../../utils/feedback';
 import { formatDateTime, paymentLabel, rupiah, statusLabel } from '../../utils/format';
 
 type Range = 'today' | 'week' | 'month' | 'all';
@@ -49,10 +52,10 @@ const AdminReports: React.FC = () => {
   const cashTotal = paid.filter((order) => order.payment === 'cash').reduce((total, order) => total + order.total, 0);
   const maxPayment = Math.max(qrisTotal, cashTotal, 1);
 
-  const menuMap = new Map<string, { name: string; qty: number; revenue: number }>();
+  const menuMap = new Map<string, { id: string; name: string; qty: number; revenue: number }>();
   paid.forEach((order) => {
     order.items.forEach((item) => {
-      const current = menuMap.get(item.menuId) ?? { name: item.name, qty: 0, revenue: 0 };
+      const current = menuMap.get(item.menuId) ?? { id: item.menuId, name: item.name, qty: 0, revenue: 0 };
       current.qty += item.qty;
       current.revenue += item.qty * item.price;
       menuMap.set(item.menuId, current);
@@ -60,6 +63,11 @@ const AdminReports: React.FC = () => {
   });
   const topMenus = [...menuMap.values()].sort((a, b) => b.qty - a.qty).slice(0, 8);
   const maxQty = Math.max(...topMenus.map((item) => item.qty), 1);
+  const menuRatings = menuRatingMap(visible);
+  const rating = summarizeRatings(visible);
+  const distribution = ratingDistribution(visible);
+  const reviews = latestReviews(visible, 3);
+  const maxStar = Math.max(...distribution.map((item) => item.count), 1);
 
   const categoryMap = new Map<string, number>();
   paid.forEach((order) => {
@@ -169,6 +177,14 @@ const AdminReports: React.FC = () => {
         </div>
         <div className="kpi-card">
           <div className="kpi-icon">
+            <IonIcon icon={star} />
+          </div>
+          <div className="kpi-label">Rating tamu</div>
+          <div className="kpi-value">{rating.count ? rating.average.toFixed(1) : '—'}</div>
+          <div className="kpi-note">{rating.count ? `${rating.count} ulasan • dari 5` : 'Belum ada ulasan'}</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-icon">
             <IonIcon icon={qrCodeOutline} />
           </div>
           <div className="kpi-label">QRIS vs Cash</div>
@@ -218,6 +234,7 @@ const AdminReports: React.FC = () => {
                       style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     >
                       {item.name}
+                      {menuRatings[item.id] ? ` · ★ ${menuRatings[item.id].average.toFixed(1)}` : ''}
                     </span>
                     <div className="bar-track">
                       <div className="bar-fill" style={{ width: `${Math.max(6, (item.qty / maxQty) * 100)}%` }} />
@@ -287,6 +304,61 @@ const AdminReports: React.FC = () => {
                 <p className="muted small">Belum ada data.</p>
               )}
             </div>
+          </div>
+
+          <div className="panel">
+            <div className="row-between wrap">
+              <div>
+                <h3 className="panel-title">Ulasan tamu</h3>
+                <p className="panel-sub">Rating setelah pesanan selesai</p>
+              </div>
+              <span className="badge-soft">{rating.count} ulasan</span>
+            </div>
+            {rating.count ? (
+              <>
+                <div className="review-average">
+                  <strong>{rating.average.toFixed(1)}</strong>
+                  <StarRating value={rating.average} />
+                  <span className="muted small">dari 5</span>
+                </div>
+                <div style={{ marginTop: 10 }}>
+                  {distribution.map((item) => (
+                    <div className="bar-row" key={item.star} style={{ gridTemplateColumns: '56px 1fr 26px' }}>
+                      <span className="small">{item.star} bintang</span>
+                      <div className="bar-track">
+                        <div
+                          className="bar-fill"
+                          style={{ width: `${item.count ? Math.max(6, (item.count / maxStar) * 100) : 0}%` }}
+                        />
+                      </div>
+                      <span className="bar-value">{item.count}</span>
+                    </div>
+                  ))}
+                </div>
+                <div className="divider" />
+                <div className="review-list">
+                  {reviews.map((order) => (
+                    <article className="review-item" key={order.id}>
+                      <div className="review-head">
+                        <StarRating value={order.feedback?.rating ?? 0} size="sm" />
+                        <span className="review-meta">
+                          Kamar {order.room} •{' '}
+                          {new Date(order.feedback?.at ?? order.createdAt).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                          })}
+                        </span>
+                      </div>
+                      {order.feedback?.comment && <p className="review-comment">“{order.feedback.comment}”</p>}
+                    </article>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="muted small" style={{ marginTop: 10 }}>
+                Belum ada ulasan pada rentang ini.
+              </p>
+            )}
           </div>
 
           <div className="panel" style={{ background: '#eaf3ed', borderStyle: 'dashed' }}>

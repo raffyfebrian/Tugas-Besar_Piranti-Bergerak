@@ -56,6 +56,13 @@ export interface TimelineEntry {
   note?: string;
 }
 
+/** Ulasan tamu setelah pesanan selesai. */
+export interface OrderFeedback {
+  rating: number;
+  comment?: string;
+  at: string;
+}
+
 export interface Order {
   id: string;
   code: string;
@@ -78,6 +85,8 @@ export interface Order {
   refundAmount?: number;
   refundMethod?: RefundMethod;
   voidedAt?: string;
+  /** Rating bintang + komentar dari tamu. */
+  feedback?: OrderFeedback;
 }
 
 export type RefundMethod = 'none' | 'cash' | 'qris';

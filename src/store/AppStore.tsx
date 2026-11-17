@@ -74,6 +74,10 @@ interface AppContextValue {
   removeFromCart: (menuId: string) => void;
   setLineNote: (menuId: string, note: string) => void;
   clearCart: () => void;
+  /** Tambahkan ulang item pesanan lama ke keranjang; mengembalikan jumlah item yang masuk. */
+  reorder: (orderId: string) => number;
+  /** Simpan rating bintang + komentar tamu (sekali per pesanan). */
+  submitFeedback: (orderId: string, rating: number, comment: string) => void;
   setRoom: (room: string) => void;
   setGuestName: (name: string) => void;
   login: (email: string, password: string) => LoginResult;
@@ -204,6 +208,45 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
   }, []);
 
   const clearCart = useCallback(() => setState((prev) => ({ ...prev, cart: [] })), []);
+
+  const reorder = useCallback(
+    (orderId: string): number => {
+      const order = state.orders.find((item) => item.id === orderId);
+      if (!order) return 0;
+      // Menu yang sudah habis dilewati agar keranjang tetap valid.
+      const available = order.items.filter((item) => state.menu.find((menu) => menu.id === item.menuId)?.available);
+      if (!available.length) return 0;
+
+      setState((prev) => {
+        const cart = [...prev.cart];
+        available.forEach((item) => {
+          const index = cart.findIndex((line) => line.menuId === item.menuId);
+          if (index >= 0) {
+            cart[index] = { ...cart[index], qty: cart[index].qty + item.qty };
+          } else {
+            cart.push({ menuId: item.menuId, qty: item.qty, note: item.note });
+          }
+        });
+        return { ...prev, cart };
+      });
+
+      return available.reduce((total, item) => total + item.qty, 0);
+    },
+    [state.menu, state.orders],
+  );
+
+  const submitFeedback = useCallback((orderId: string, rating: number, comment: string) => {
+    const safeRating = Math.min(5, Math.max(1, Math.round(rating)));
+    const at = new Date().toISOString();
+    setState((prev) => ({
+      ...prev,
+      orders: prev.orders.map((order) =>
+        order.id === orderId && !order.feedback
+          ? { ...order, feedback: { rating: safeRating, comment: comment.trim() || undefined, at } }
+          : order,
+      ),
+    }));
+  }, []);
 
   const setRoom = useCallback((room: string) => setState((prev) => ({ ...prev, room })), []);
 
@@ -622,6 +665,8 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       removeFromCart,
       setLineNote,
       clearCart,
+      reorder,
+      submitFeedback,
       setRoom,
       setGuestName,
       login,
@@ -660,6 +705,8 @@ export const AppProvider: React.FC<React.PropsWithChildren> = ({ children }) => 
       removeFromCart,
       setLineNote,
       clearCart,
+      reorder,
+      submitFeedback,
       setRoom,
       setGuestName,
       login,

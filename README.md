@@ -31,6 +31,9 @@ Aplikasi ini mengikuti spesifikasi `penjelasan_sistem_ngoffe_id.md`:
 - **Stok otomatis dari resep**: setiap menu punya resep per porsi, stok bahan berkurang otomatis saat pesanan pertama kali masuk dapur, bahan dikembalikan bila pesanan di-void, dan staf menerima toast + nada peringatan ketika bahan menembus batas minimum.
 - **Shift & rekonsiliasi kas**: kasir membuka shift dengan kas awal, memantau penjualan cash/QRIS berjalan, lalu menutup shift dengan uang fisik di laci; selisih kas dihitung otomatis dan riwayat shift tersimpan.
 - **Void / refund dengan audit trail**: pembatalan pesanan wajib beralasan, bisa disertai refund cash/QRIS, tercatat permanen di audit trail (halaman transaksi & shift), dan struk tamu diberi stempel VOID.
+- **Riwayat pesanan kamar + "Pesan lagi"**: halaman status menampilkan pesanan terakhir dari kamar tamu (maksimal 8), lengkap dengan status, rincian item, dan ulasan; satu ketukan menambahkan semua item lama ke keranjang (menu habis otomatis dilewati).
+- **Rating bintang & ulasan tamu**: setelah pesanan `selesai`, tamu dapat memberi 1–5 bintang plus komentar; hasilnya tampil di **Admin → Laporan** sebagai KPI rating, grafik distribusi bintang, rating per menu terlaris, dan daftar ulasan terbaru.
+- **Konfeti & animasi ulasan**: kiriman ulasan memicu hujan konfeti singkat, bintang meletup, dan kartu riwayat muncul berurutan; semua animasi berhenti saat *reduce motion* aktif.
 
 > Catatan: prototipe ini **tanpa backend**. Seluruh data disimpan di `localStorage` browser (`ngoffe-ionic-state-v1`) dan sudah berisi data demo.
 
@@ -152,7 +155,7 @@ src/
   pages/kasir/          # Pesanan, Detail, Transaksi, Shift & Kas
   pages/kitchen/        # Antrean dapur + timer masak + stok
   pages/admin/          # Dashboard, Menu, Kamar, Staf, Stok & Resep, Laporan, Pengaturan
-  utils/                # format, ETA, resep stok, timer dapur, native, dsb.
+  utils/                # format, ETA, resep stok, timer dapur, rating/feedback, native, dsb.
   theme/                # variabel & styling Ngoffe ID
 android/                # proyek native Capacitor Android
 ```
@@ -214,6 +217,13 @@ Showcase 3D beranda (`src/components/Showcase3D.tsx`) dibangun murni dengan CSS 
 - **Notifikasi status** memakai `src/utils/statusNotify.ts` + `useOrderStatusNotice`. Di native memakai `LocalNotifications` dengan channel `ngoffe-status`; di web memakai `Notification` API dan hanya muncul saat tab tidak terlihat. Preferensi tamu disimpan di `ngoffe-notify-enabled` dan baru dianggap aktif setelah izin diberikan.
 - **Skeleton** berasal dari `React.lazy` + `Suspense` (`src/components/Skeleton.tsx`): `PageSkeleton` untuk halaman staf/admin/pembayaran, `ShowcaseSkeleton` untuk panggung 3D, dan `MenuGridSkeleton` untuk daftar menu.
 - **Transisi dan timeline** murni CSS di `src/theme/app.css`: `pageEnter` pada `ion-content::part(scroll)`, `skeletonShimmer` pada balok skeleton, `lineGrow` pada garis timeline yang selesai, gradien parsial untuk tahap aktif, serta `progress-fill` dengan sheen. Semua animasi ikut berhenti saat *prefers-reduced-motion*.
+
+### Riwayat pesanan, rating, dan konfeti
+
+- **Riwayat per kamar** (`src/pages/guest/OrderStatusPage.tsx`): pesanan kamar diurutkan dari yang terbaru (maksimal 8 kartu). Setiap kartu punya status, chip item, total, tombol *Lihat status*, dan *Pesan lagi*.
+- **Pesan lagi** (`reorder` di `AppStore`): item pesanan lama digabung ke keranjang (jumlah ditambahkan bila menu sama, catatan ikut disalin); menu yang sedang tidak tersedia dilewati agar keranjang tetap valid.
+- **Ulasan tamu** (`Order.feedback`, `submitFeedback`): rating 1–5 + komentar opsional, disimpan sekali per pesanan saat status `selesai`. Helper di `src/utils/feedback.ts` menghitung rata-rata, distribusi bintang, rating per menu, dan ulasan terbaru.
+- **Komponen bersama**: `StarRating` (mode tampil & interaktif) dan `Confetti` (portal ke `document.body`, 30 keping, bersih sendiri setelah ±2,6 detik). Data demo di `src/data/seed.ts` sudah memuat tiga ulasan agar laporan langsung terisi.
 
 ### Operasional dapur, stok, dan kas
 

@@ -1983,6 +1983,309 @@ a {
 }
 
 /* ============================================================
+   Riwayat pesanan, rating & ulasan tamu
+   ============================================================ */
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.history-card {
+  border: 1px solid var(--ngoffe-line);
+  border-radius: 16px;
+  padding: 14px;
+  background: #fff;
+  box-shadow: 0 8px 20px rgba(15, 52, 39, 0.04);
+}
+
+.history-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.history-chip {
+  background: var(--ngoffe-sand);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--ngoffe-forest);
+}
+
+.history-rating {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.history-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.history-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.history-actions ion-button {
+  margin: 0;
+}
+
+/* Rating bintang */
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.star-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.star-row ion-icon {
+  font-size: 1.05rem;
+  color: #d8c9a8;
+}
+
+.star-row ion-icon.on {
+  color: #e2b53c;
+}
+
+.star-rating.sm .star-row ion-icon {
+  font-size: 0.9rem;
+}
+
+.star-rating.lg .star-row ion-icon {
+  font-size: 1.6rem;
+}
+
+.star-rating.interactive .star-row button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  padding: 2px;
+  border-radius: 50%;
+  color: #d8c9a8;
+  cursor: pointer;
+  font-size: 1.6rem;
+  line-height: 1;
+  transition:
+    transform 0.15s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.15s ease;
+}
+
+.star-rating.interactive .star-row button.on {
+  color: #e2b53c;
+}
+
+.star-rating.interactive .star-row button:hover {
+  transform: scale(1.15) rotate(-4deg);
+}
+
+.star-rating.interactive .star-row button:active {
+  transform: scale(0.85);
+}
+
+.star-value {
+  font-size: 0.95rem;
+  color: var(--ngoffe-forest);
+}
+
+.star-count {
+  font-size: 0.75rem;
+  color: var(--ngoffe-muted);
+}
+
+/* Panel ulasan tamu */
+.feedback-panel {
+  background: linear-gradient(160deg, #f7fbf8, #ffffff 70%);
+}
+
+.feedback-stars {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 14px 0 12px;
+}
+
+.feedback-hint {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--ngoffe-muted);
+  min-width: 78px;
+}
+
+.feedback-hint.active {
+  color: var(--ngoffe-forest);
+}
+
+.feedback-comment {
+  --background: #f6fbf7;
+  --padding-start: 12px;
+  --padding-end: 12px;
+  --padding-top: 10px;
+  --padding-bottom: 10px;
+  border: 1px solid var(--ngoffe-line);
+  border-radius: 12px;
+  font-size: 0.84rem;
+}
+
+.feedback-thanks {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.feedback-emoji {
+  font-size: 1.9rem;
+  line-height: 1;
+  animation: feedbackPop 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.feedback-saved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.feedback-quote {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--ngoffe-muted);
+}
+
+/* Ulasan pada laporan admin */
+.review-average {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+
+.review-average strong {
+  font-size: 1.8rem;
+  line-height: 1;
+  color: var(--ngoffe-forest);
+}
+
+.review-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.review-item {
+  padding: 10px 0;
+  border-bottom: 1px dashed var(--ngoffe-line);
+}
+
+.review-item:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.review-meta {
+  font-size: 0.72rem;
+  color: var(--ngoffe-muted);
+}
+
+.review-comment {
+  margin: 6px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--ngoffe-muted);
+}
+
+/* Konfeti kemenangan kecil */
+.confetti-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 60;
+}
+
+.confetti-layer span {
+  position: absolute;
+  top: -14px;
+  width: 9px;
+  height: 14px;
+  border-radius: 2px;
+  opacity: 0;
+  animation-name: confettiFall;
+  animation-timing-function: cubic-bezier(0.25, 0.6, 0.35, 1);
+  animation-fill-mode: forwards;
+}
+
+@keyframes confettiFall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -20px, 0) rotate(0deg);
+  }
+  12% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--drift, 0), 86vh, 0) rotate(640deg);
+  }
+}
+
+@keyframes feedbackPop {
+  0% {
+    transform: scale(0.3) rotate(-18deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15) rotate(8deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti-layer {
+    display: none;
+  }
+}
+
+/* ============================================================
    Animasi mikro & status
    ============================================================ */
 .status-anim {

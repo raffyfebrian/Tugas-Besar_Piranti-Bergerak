@@ -438,6 +438,7 @@ const makeOrder = (options: {
   payment: PaymentMethod;
   status: OrderStatus;
   proofName?: string;
+  feedback?: { rating: number; comment?: string };
 }): Order => {
   const createdAt = new Date(Date.now() - options.minutesAgo * 60000);
   const total = options.items.reduce((sum, item) => sum + item.price * item.qty, 0);
@@ -456,6 +457,13 @@ const makeOrder = (options: {
     createdAt: createdAt.toISOString(),
     updatedAt: createdAt.toISOString(),
     timeline: buildTimeline(options.status, createdAt),
+    feedback: options.feedback
+      ? {
+          rating: options.feedback.rating,
+          comment: options.feedback.comment,
+          at: new Date(createdAt.getTime() + 45 * 60000).toISOString(),
+        }
+      : undefined,
   };
 };
 
@@ -497,6 +505,7 @@ const orderSeed = (): Order[] => [
     items: [lineFor('kopi-gula-aren', 1), lineFor('makan-fries', 1)],
     payment: 'cash',
     status: 'selesai',
+    feedback: { rating: 5, comment: 'Latte gula aren-nya pas, fries masih hangat saat tiba.' },
   }),
   makeOrder({
     sequence: 5,
@@ -516,6 +525,7 @@ const orderSeed = (): Order[] => [
     payment: 'qris',
     status: 'selesai',
     proofName: 'bukti-qris-fajar.jpg',
+    feedback: { rating: 4, comment: 'Geprek pedasnya mantap, teh lemon sedikit terlalu manis.' },
   }),
   makeOrder({
     sequence: 7,
@@ -535,6 +545,7 @@ const orderSeed = (): Order[] => [
     payment: 'qris',
     status: 'selesai',
     proofName: 'bukti-qris-hana.jpg',
+    feedback: { rating: 5, comment: 'Croissant-nya flaky dan wangi. Antar ke kamar cepat.' },
   }),
 ];
 

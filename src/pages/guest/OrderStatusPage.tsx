@@ -1,25 +1,29 @@
-import { IonButton, IonIcon, useIonRouter, useIonToast } from '@ionic/react';
+import { IonButton, IonIcon, IonTextarea, useIonRouter, useIonToast } from '@ionic/react';
 import {
-  arrowForwardOutline,
+  checkmarkCircleOutline,
   checkmarkOutline,
   homeOutline,
   notificationsOffOutline,
   notificationsOutline,
   printOutline,
-  receiptOutline,
+  repeatOutline,
   searchOutline,
+  timeOutline,
   timerOutline,
 } from 'ionicons/icons';
 import React, { useCallback, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
+import { Confetti } from '../../components/Confetti';
 import { GuestShell } from '../../components/GuestShell';
+import { StarRating } from '../../components/StarRating';
 import { StatusBadge } from '../../components/StatusBadge';
 import { useOrderStatusNotice } from '../../hooks/useOrderStatusNotice';
 import { useApp } from '../../store/AppStore';
 import type { Order, OrderStatus } from '../../types';
 import { estimateOrderEta } from '../../utils/eta';
-import { formatDateTime, formatTime, paymentLabel, rupiah, statusLabel } from '../../utils/format';
+import { formatDateTime, formatTime, orderItemCount, paymentLabel, rupiah, statusLabel } from '../../utils/format';
+import { successFeedback } from '../../utils/native';
 import { playOrderChime } from '../../utils/notify';
 import {
   isNotificationEnabled,
@@ -49,13 +53,24 @@ const statusHint: Record<OrderStatus, string> = {
   dibatalkan: 'Pesanan dibatalkan. Silakan hubungi kasir bila perlu bantuan.',
 };
 
+const RATING_HINTS: Record<number, string> = {
+  1: 'Kurang',
+  2: 'Cukup',
+  3: 'Baik',
+  4: 'Sangat baik',
+  5: 'Luar biasa',
+};
+
 const GuestOrderStatus: React.FC = () => {
   const { id } = useParams<{ id?: string }>();
-  const { state, clearCart } = useApp();
+  const { state, reorder, submitFeedback } = useApp();
   const router = useIonRouter();
   const [present] = useIonToast();
   const [query, setQuery] = useState('');
   const [now, setNow] = useState(() => Date.now());
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [celebrate, setCelebrate] = useState(false);
   const [notifyState, setNotifyState] = useState<NotificationPermissionState>('prompt');
   const [notifyEnabled, setNotifyEnabledState] = useState(() => isNotificationEnabled());
 
@@ -69,6 +84,13 @@ const GuestOrderStatus: React.FC = () => {
   useEffect(() => {
     void notificationPermission().then(setNotifyState);
   }, []);
+
+  // Konfeti hanya sebentar, lalu dilepas dari DOM agar tidak menumpuk.
+  useEffect(() => {
+    if (!celebrate) return undefined;
+    const timer = window.setTimeout(() => setCelebrate(false), 2600);
+    return () => window.clearTimeout(timer);
+  }, [celebrate]);
 
   // Segarkan estimasi tiap 30 detik agar sisa menit ikut berjalan.
   useEffect(() => {
@@ -133,11 +155,46 @@ const GuestOrderStatus: React.FC = () => {
     }
   };
 
+  // Tambahkan ulang item pesanan lama; menu yang sudah habis otomatis dilewati.
+  const handleReorder = (target: Order) => {
+    const count = reorder(target.id);
+    if (!count) {
+      void present({
+        message: 'Menu pada pesanan ini sedang tidak tersedia.',
+        duration: 2400,
+        color: 'warning',
+        position: 'top',
+      });
+      return;
+    }
+    void successFeedback();
+    void present({
+      message: `${count} item ditambahkan ke keranjang.`,
+      duration: 2000,
+      color: 'success',
+      position: 'top',
+    });
+    router.push('/order/cart');
+  };
+
+  const sendFeedback = () => {
+    if (!order || !rating) return;
+    submitFeedback(order.id, rating, comment);
+    setCelebrate(true);
+    void successFeedback();
+    void present({
+      message: 'Terima kasih! Ulasan Anda membantu kami.',
+      duration: 2400,
+      color: 'success',
+      position: 'top',
+    });
+  };
+
   if (!order) {
     const roomOrders = state.orders
       .filter((item) => state.room && item.room === state.room)
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-      .slice(0, 3);
+      .slice(0, 8);
 
     return (
       <GuestShell title="Lacak Pesanan" backHref="/order" showCart={false}>
@@ -169,24 +226,73 @@ const GuestOrderStatus: React.FC = () => {
 
         {roomOrders.length > 0 && (
           <div className="panel" style={{ marginTop: 14 }}>
-            <h3 className="panel-title">Pesanan terakhir di kamar {state.room}</h3>
-            {roomOrders.map((item) => (
-              <div
-                key={item.id}
-                className="row-between"
-                style={{ padding: '10px 0', borderBottom: '1px solid var(--ngoffe-line)', cursor: 'pointer' }}
-                onClick={() => router.push(`/order/status/${item.id}`)}
-              >
-                <div>
-                  <div className="order-code">{item.code}</div>
-                  <div className="order-meta">{formatDateTime(item.createdAt)}</div>
-                </div>
-                <div className="row">
-                  <StatusBadge status={item.status} label={statusLabel[item.status]} />
-                  <IonIcon icon={arrowForwardOutline} color="medium" />
-                </div>
+            <div className="row-between wrap">
+              <div>
+                <h3 className="panel-title">Riwayat kamar {state.room}</h3>
+                <p className="panel-sub">Ketuk pesanan untuk melihat status atau memesan ulang.</p>
               </div>
-            ))}
+              <span className="badge-soft">{roomOrders.length} pesanan</span>
+            </div>
+
+            <div className="history-list">
+              {roomOrders.map((item, index) => (
+                <article
+                  key={item.id}
+                  className="history-card fade-up"
+                  style={{ animationDelay: `${Math.min(index, 8) * 55}ms` }}
+                >
+                  <div className="history-head">
+                    <div>
+                      <div className="order-code">{item.code}</div>
+                      <div className="order-meta">
+                        <span>{formatDateTime(item.createdAt)}</span>
+                        <span>{orderItemCount(item)} item</span>
+                      </div>
+                    </div>
+                    <StatusBadge status={item.status} label={statusLabel[item.status]} />
+                  </div>
+
+                  <div className="history-items">
+                    {item.items.map((line) => (
+                      <span className="history-chip" key={`${item.id}-${line.menuId}`}>
+                        {line.qty}× {line.name}
+                      </span>
+                    ))}
+                  </div>
+
+                  {item.feedback && (
+                    <div className="history-rating">
+                      <StarRating value={item.feedback.rating} size="sm" />
+                      <span className="muted small">Ulasan Anda</span>
+                    </div>
+                  )}
+
+                  <div className="history-foot">
+                    <strong>{rupiah(item.total)}</strong>
+                    <div className="history-actions">
+                      <IonButton size="small" fill="outline" onClick={() => router.push(`/order/status/${item.id}`)}>
+                        Lihat status
+                      </IonButton>
+                      <IonButton size="small" onClick={() => handleReorder(item)}>
+                        <IonIcon slot="start" icon={repeatOutline} />
+                        Pesan lagi
+                      </IonButton>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {state.room && !roomOrders.length && (
+          <div className="panel center" style={{ marginTop: 14 }}>
+            <div style={{ fontSize: '2rem' }}>🛏️</div>
+            <h3 className="panel-title">Belum ada pesanan di kamar {state.room}</h3>
+            <p className="muted small">Mulai pesan menu favorit Anda, riwayatnya akan muncul di sini.</p>
+            <IonButton routerLink="/order/menu" style={{ marginTop: 10 }}>
+              Lihat Menu
+            </IonButton>
           </div>
         )}
       </GuestShell>
@@ -372,7 +478,64 @@ const GuestOrderStatus: React.FC = () => {
           <span>Total</span>
           <span>{rupiah(order.total)}</span>
         </div>
+        <IonButton size="small" fill="clear" routerLink="/order/status" style={{ marginTop: 6, marginLeft: -8 }}>
+          <IonIcon slot="start" icon={timeOutline} />
+          Semua pesanan kamar {order.room}
+        </IonButton>
       </div>
+
+      {completed && (
+        <div className="panel feedback-panel" style={{ marginBottom: 14 }}>
+          {order.feedback ? (
+            <div className="feedback-thanks">
+              <span className="feedback-emoji" aria-hidden="true">
+                🎉
+              </span>
+              <div>
+                <h3 className="panel-title mb-0">Terima kasih atas ulasannya!</h3>
+                <div className="feedback-saved">
+                  <StarRating value={order.feedback.rating} size="sm" showValue />
+                  <span className="muted small">{formatDateTime(order.feedback.at)}</span>
+                </div>
+                {order.feedback.comment && <p className="feedback-quote">“{order.feedback.comment}”</p>}
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="row-between wrap">
+                <div>
+                  <h3 className="panel-title mb-0">Bagaimana pesanan Anda?</h3>
+                  <p className="panel-sub">Rating Anda membantu dapur dan kasir kami.</p>
+                </div>
+                <span className="badge-soft success">Selesai</span>
+              </div>
+
+              <div className="feedback-stars">
+                <StarRating value={rating} onChange={setRating} size="lg" label="Beri rating pesanan" />
+                <span className={`feedback-hint${rating ? ' active' : ''}`}>
+                  {rating ? RATING_HINTS[rating] : 'Pilih bintang'}
+                </span>
+              </div>
+
+              <IonTextarea
+                className="feedback-comment"
+                placeholder="Ceritakan rasa atau pelayanan (opsional)…"
+                value={comment}
+                onIonInput={(event) => setComment(event.detail.value ?? '')}
+                autoGrow
+                rows={2}
+                maxlength={180}
+                counter
+              />
+
+              <IonButton expand="block" style={{ marginTop: 12 }} disabled={!rating} onClick={sendFeedback}>
+                <IonIcon slot="start" icon={checkmarkCircleOutline} />
+                Kirim Ulasan
+              </IonButton>
+            </>
+          )}
+        </div>
+      )}
 
       <div className="stack">
         {canPay && (
@@ -380,13 +543,8 @@ const GuestOrderStatus: React.FC = () => {
             Lanjutkan Pembayaran
           </IonButton>
         )}
-        <IonButton
-          expand="block"
-          fill={canPay ? 'outline' : 'solid'}
-          routerLink="/order/menu"
-          onClick={() => clearCart()}
-        >
-          <IonIcon slot="start" icon={receiptOutline} />
+        <IonButton expand="block" fill={canPay ? 'outline' : 'solid'} onClick={() => handleReorder(order)}>
+          <IonIcon slot="start" icon={repeatOutline} />
           Pesan Lagi
         </IonButton>
         <IonButton expand="block" fill="clear" routerLink="/">
@@ -394,6 +552,8 @@ const GuestOrderStatus: React.FC = () => {
           Kembali ke Beranda
         </IonButton>
       </div>
+
+      {celebrate && <Confetti />}
 
       {order.status !== 'selesai' && order.status !== 'dibatalkan' && (
         <div className="panel" style={{ marginTop: 14, background: '#eaf3ed', borderStyle: 'dashed' }}>

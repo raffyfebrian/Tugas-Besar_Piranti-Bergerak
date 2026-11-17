@@ -1,5 +1,5 @@
 import { IonButton, IonIcon } from '@ionic/react';
-import { add, searchOutline } from 'ionicons/icons';
+import { add, searchOutline, timeOutline } from 'ionicons/icons';
 import React, { useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 
@@ -53,9 +53,15 @@ const OrderMenu: React.FC = () => {
             Pesanan diantar langsung ke kamar Anda.
           </p>
         </div>
-        <IonButton fill="clear" routerLink="/order" size="small">
-          Ganti kamar
-        </IonButton>
+        <div className="row" style={{ gap: 2 }}>
+          <IonButton fill="clear" routerLink="/order/status" size="small">
+            <IonIcon slot="start" icon={timeOutline} />
+            Pesanan saya
+          </IonButton>
+          <IonButton fill="clear" routerLink="/order" size="small">
+            Ganti kamar
+          </IonButton>
+        </div>
       </div>
 
       <div className="search-shell" style={{ marginBottom: 12 }}>

@@ -19,7 +19,7 @@
     "test:e2e": "playwright test",
     "android:sync": "npm run build && cap sync android",
     "android:open": "cap open android",
-    "android:apk": "npm run build && cap sync android && cd android && gradlew.bat assembleDebug",
+    "android:apk": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-apk.ps1",
     "assets:brand": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-brand-assets.ps1"
   },
   "dependencies": {

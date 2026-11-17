@@ -173,7 +173,13 @@ Prasyarat:
 - **Android SDK**: `platforms;android-36`, `build-tools;36.0.0`, `platform-tools`.
 - File `android/local.properties` berisi `sdk.dir=<path Android SDK>`.
 
-Langkah build:
+Cara paling mudah (JDK, SDK, dan env diatur otomatis, APK juga disalin ke root proyek):
+
+```powershell
+npm run android:apk
+```
+
+Atau jalankan langkahnya manual bila `JAVA_HOME`/`ANDROID_HOME` sudah diset:
 
 ```bash
 npm run build
@@ -181,6 +187,8 @@ npx cap sync android
 cd android
 ./gradlew.bat assembleDebug
 ```
+
+> `npm run android:apk` memakai `scripts/build-apk.ps1`. Skrip ini otomatis memakai JDK 21 di `%LOCALAPPDATA%\Android\jdk-21` dan SDK di `%LOCALAPPDATA%\Android\Sdk` bila kedua variabel lingkungan belum diset (misalnya saat terminal dibuka dari IDE). Gradle wrapper sudah ada di repo, jadi **tidak perlu download Gradle/Android Studio** untuk membangun APK di mesin ini.
 
 Hasil: `android/app/build/outputs/apk/debug/app-debug.apk` (APK debug, ditandatangani debug key, siap di-sideload).
 

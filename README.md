@@ -35,6 +35,7 @@ Aplikasi ini mengikuti spesifikasi `penjelasan_sistem_ngoffe_id.md`:
 - **Rating bintang & ulasan tamu**: setelah pesanan `selesai`, tamu dapat memberi 1–5 bintang plus komentar; hasilnya tampil di **Admin → Laporan** sebagai KPI rating, grafik distribusi bintang, rating per menu terlaris, dan daftar ulasan terbaru.
 - **Konfeti & animasi ulasan**: kiriman ulasan memicu hujan konfeti singkat, bintang meletup, dan kartu riwayat muncul berurutan; semua animasi berhenti saat *reduce motion* aktif.
 - **Swipe-to-delete + Undo + FLIP di keranjang**: geser item ke kiri untuk menghapus, baris lain meluncur halus mengisi tempatnya (FLIP), lalu toast **Undo** mengembalikan item persis di posisi semula (jumlah & catatan ikut tersimpan). Tombol hapus tetap tersedia dan memakai jalur Undo yang sama.
+- **Scroll-reveal di halaman publik**: kartu menu, galeri, dan panel konten muncul bertahap saat di-scroll memakai `IntersectionObserver`, dengan stagger dan fallback bila animasi tidak didukung.
 
 > Catatan: prototipe ini **tanpa backend**. Seluruh data disimpan di `localStorage` browser (`ngoffe-ionic-state-v1`) dan sudah berisi data demo.
 
@@ -239,6 +240,14 @@ Showcase 3D beranda (`src/components/Showcase3D.tsx`) dibangun murni dengan CSS 
 - **Geser hapus** (`src/components/SwipeToDelete.tsx`): gesture pointer (sentuh & mouse) dengan ambang 72 px dan batas geser 120 px. Scroll vertikal membatalkan geseran, tombol/stepper/textarea tidak memicu gesture, dan background merah muda muncul saat item ditarik. Saat dilepas, baris beranimasi keluar; timer cadangan memastikan item tetap terhapus walau tab tidak aktif menahan animation frame.
 - **Undo** (`restoreCartLine` di `AppStore` + toast di `src/pages/guest/Cart.tsx`): baris yang dihapus disimpan sementara bersama indeks asalnya. Tombol Undo menyisipkannya kembali tepat di posisi semula beserta `qty` dan `note`; tombol ini sengaja tanpa `role: "cancel"` agar handler dipanggil langsung oleh Ionic. Toast otomatis hilang setelah 4 detik.
 - **FLIP reflow** (`src/hooks/useFlipRows.ts`): posisi setiap baris (`data-flip-key`) direkam sebelum state berubah, lalu setelah commit baris yang bergeser dianimasikan dari posisi lama ke posisi baru (320 ms, `cubic-bezier(0.22, 1, 0.36, 1)`). Berhenti otomatis saat *reduce motion* aktif.
+- **Pengujian**: `src/store/AppStore.test.tsx` mengunci perilaku `restoreCartLine` (indeks semula, qty/catatan utuh, tidak duplikat, indeks di-clamp), dan `src/hooks/useScrollReveal.test.tsx` menguji observer, *reduce motion*, serta cleanup.
+
+### Scroll-reveal halaman publik
+
+- `src/hooks/useScrollReveal.ts` memasang `IntersectionObserver` pada elemen bertanda `data-reveal` di dalam `#public-content`. Kelas `reveal-root` hanya dipasang setelah observer siap, jadi konten tetap terlihat bila JS gagal atau browser tidak mendukung `IntersectionObserver`.
+- Elemen yang masuk viewport diberi `is-visible` lalu berhenti diamati (one-shot). Delay bertahap memakai CSS variable `--reveal-delay`.
+- Halaman yang memakai: Beranda, Menu, Galeri, Tentang, dan Kontak. Saat filter/pencarian menu berubah, observer dipasang ulang agar kartu baru ikut muncul.
+- *Reduce motion* langsung menampilkan semua elemen tanpa observer. Ada fallback 900 ms untuk tab yang tidak dirender (mis. automation/background) agar konten di atas lipatan tidak tetap tersembunyi.
 
 ### Operasional dapur, stok, dan kas
 

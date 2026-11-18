@@ -6,6 +6,7 @@ import { CountUp } from '../../components/CountUp';
 import { MenuCard } from '../../components/MenuCard';
 import { PublicShell } from '../../components/PublicShell';
 import { ShowcaseSkeleton } from '../../components/Skeleton';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { useApp } from '../../store/AppStore';
 import { averageDeliveryMinutes } from '../../utils/format';
 
@@ -20,12 +21,17 @@ const STEPS = [
   { title: 'Pesanan Diantar', text: 'Pantau status pesanan sampai tiba di kamar Anda.' },
 ];
 
+const revealStyle = (index: number): React.CSSProperties =>
+  ({ '--reveal-delay': `${Math.min(index, 10) * 60}ms` }) as React.CSSProperties;
+
 const Home: React.FC = () => {
   const { state } = useApp();
   const featured = state.menu.filter((item) => item.available).slice(0, 4);
   const menuTotal = state.menu.length;
   const activeRooms = state.rooms.filter((room) => room.active).length;
   const deliveryMinutes = averageDeliveryMinutes(state.orders) ?? 12;
+
+  useScrollReveal();
 
   return (
     <PublicShell active="/">
@@ -98,21 +104,21 @@ const Home: React.FC = () => {
 
       <div className="container">
         <div className="info-strip">
-          <div className="info-card">
+          <div className="info-card reveal" data-reveal style={revealStyle(0)}>
             <span className="info-icon">🕖</span>
             <div>
               <strong>Buka Setiap Hari</strong>
               <span>{state.settings.openHours}</span>
             </div>
           </div>
-          <div className="info-card">
+          <div className="info-card reveal" data-reveal style={revealStyle(1)}>
             <span className="info-icon">📱</span>
             <div>
               <strong>Pesan via QR</strong>
               <span>Tanpa antre, tanpa buat akun</span>
             </div>
           </div>
-          <div className="info-card">
+          <div className="info-card reveal" data-reveal style={revealStyle(2)}>
             <span className="info-icon">💳</span>
             <div>
               <strong>QRIS &amp; Cash</strong>
@@ -127,7 +133,7 @@ const Home: React.FC = () => {
       </Suspense>
 
       <section className="section container">
-        <div className="section-head">
+        <div className="section-head reveal" data-reveal>
           <div>
             <span className="section-kicker">Paling dicari</span>
             <h2 className="section-title">Menu favorit tamu</h2>
@@ -143,6 +149,7 @@ const Home: React.FC = () => {
               key={item.id}
               item={item}
               index={index}
+              reveal
               action={
                 <IonButton size="small" fill="outline" routerLink="/order">
                   Pesan
@@ -166,7 +173,7 @@ const Home: React.FC = () => {
           </div>
           <div className="steps">
             {STEPS.map((step, index) => (
-              <div className="step-card" key={step.title}>
+              <div className="step-card reveal" data-reveal style={revealStyle(index)} key={step.title}>
                 <div className="step-num">{index + 1}</div>
                 <h4>{step.title}</h4>
                 <p>{step.text}</p>
@@ -177,7 +184,7 @@ const Home: React.FC = () => {
       </section>
 
       <section className="section container">
-        <div className="cta-banner">
+        <div className="cta-banner reveal" data-reveal>
           <div>
             <h2>Sedang menginap? Pesan sekarang.</h2>
             <p>

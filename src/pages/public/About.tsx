@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { PublicShell } from '../../components/PublicShell';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { useApp } from '../../store/AppStore';
 
 const VALUES = [
@@ -21,8 +22,13 @@ const VALUES = [
   },
 ];
 
+const revealStyle = (index: number): React.CSSProperties =>
+  ({ '--reveal-delay': `${Math.min(index, 10) * 60}ms` }) as React.CSSProperties;
+
 const About: React.FC = () => {
   const { state } = useApp();
+
+  useScrollReveal();
 
   return (
     <PublicShell active="/about">
@@ -46,7 +52,7 @@ const About: React.FC = () => {
             alignItems: 'center',
           }}
         >
-          <div>
+          <div className="reveal" data-reveal>
             <span className="section-kicker">Cerita kami</span>
             <h2 className="section-title">Dari café kecil, tumbuh bersama hotel.</h2>
             <p className="muted" style={{ lineHeight: 1.75 }}>
@@ -98,15 +104,15 @@ const About: React.FC = () => {
 
       <section className="section" style={{ background: '#e6f0e9' }}>
         <div className="container">
-          <div className="section-head">
+          <div className="section-head reveal" data-reveal>
             <div>
               <span className="section-kicker">Nilai kami</span>
               <h2 className="section-title">Yang membuat kami berbeda</h2>
             </div>
           </div>
           <div className="grid-auto">
-            {VALUES.map((value) => (
-              <div className="panel" key={value.title}>
+            {VALUES.map((value, index) => (
+              <div className="panel reveal" data-reveal style={revealStyle(index)} key={value.title}>
                 <div style={{ fontSize: '2rem', marginBottom: 10 }}>{value.emoji}</div>
                 <h3 className="panel-title">{value.title}</h3>
                 <p className="muted small" style={{ lineHeight: 1.65, margin: '8px 0 0' }}>
@@ -125,8 +131,8 @@ const About: React.FC = () => {
             { value: '15', label: 'Kamar terhubung QR' },
             { value: '3', label: 'Peran operasional' },
             { value: '4.9', label: 'Rating kepuasan tamu' },
-          ].map((stat) => (
-            <div className="panel center" key={stat.label}>
+          ].map((stat, index) => (
+            <div className="panel center reveal" data-reveal style={revealStyle(index)} key={stat.label}>
               <div
                 style={{
                   fontFamily: "'Playfair Display', Georgia, serif",

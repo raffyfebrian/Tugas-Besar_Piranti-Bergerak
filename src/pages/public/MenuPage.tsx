@@ -4,6 +4,7 @@ import React, { useMemo, useState } from 'react';
 
 import { MenuCard } from '../../components/MenuCard';
 import { PublicShell } from '../../components/PublicShell';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { useApp } from '../../store/AppStore';
 import type { MenuCategory } from '../../types';
 
@@ -13,6 +14,9 @@ const MenuPage: React.FC = () => {
   const { state } = useApp();
   const [category, setCategory] = useState<'Semua' | MenuCategory>('Semua');
   const [query, setQuery] = useState('');
+
+  // Filter/ pencarian mengganti kartu: observer dipasang ulang untuk kartu baru.
+  useScrollReveal(`${category}-${query}`);
 
   const items = useMemo(
     () =>
@@ -79,6 +83,7 @@ const MenuPage: React.FC = () => {
                 key={item.id}
                 item={item}
                 index={index}
+                reveal
                 action={
                   <IonButton size="small" fill="outline" routerLink="/order">
                     Pesan
@@ -95,7 +100,7 @@ const MenuPage: React.FC = () => {
           </div>
         )}
 
-        <div className="panel" style={{ marginTop: 26 }}>
+        <div className="panel reveal" data-reveal style={{ marginTop: 26 }}>
           <div className="row-between wrap">
             <div>
               <strong>Ingin memesan sekarang?</strong>

@@ -11,10 +11,20 @@ interface MenuCardProps {
   onAdd?: () => void;
   compact?: boolean;
   index?: number;
+  /** Pakai reveal berbasis scroll di halaman publik (bukan animasi saat mount). */
+  reveal?: boolean;
 }
 
-export const MenuCard: React.FC<MenuCardProps> = ({ item, action, onAdd, compact, index = 0 }) => (
-  <article className="menu-card fade-up" style={{ animationDelay: `${Math.min(index, 14) * 45}ms` }}>
+export const MenuCard: React.FC<MenuCardProps> = ({ item, action, onAdd, compact, index = 0, reveal = false }) => (
+  <article
+    className={`menu-card ${reveal ? 'reveal' : 'fade-up'}`}
+    {...(reveal ? { 'data-reveal': '' } : {})}
+    style={
+      reveal
+        ? ({ '--reveal-delay': `${Math.min(index, 14) * 45}ms` } as React.CSSProperties)
+        : { animationDelay: `${Math.min(index, 14) * 45}ms` }
+    }
+  >
     <div className="menu-thumb" style={{ background: item.gradient }}>
       <span className="emoji">{item.emoji}</span>
       {!item.available && <span className="menu-flag">Habis</span>}

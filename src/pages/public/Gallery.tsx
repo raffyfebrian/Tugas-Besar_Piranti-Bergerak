@@ -1,6 +1,7 @@
 import React from 'react';
 
 import { PublicShell } from '../../components/PublicShell';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 
 const TILES = [
   { emoji: '☕', label: 'Bar & manual brew', gradient: 'linear-gradient(150deg,#123c2d,#2f7d60)', tall: true },
@@ -13,35 +14,43 @@ const TILES = [
   { emoji: '🌙', label: 'Suasana malam', gradient: 'linear-gradient(150deg,#0f2019,#1f5c45)' },
 ];
 
-const Gallery: React.FC = () => (
-  <PublicShell active="/gallery">
-    <section className="page-hero">
-      <div className="container">
-        <span className="pill">Galeri</span>
-        <h1>Suasana yang ingin kami bagikan.</h1>
-        <p>Sudut café, hidangan, dan kamar hotel — semuanya dirancang agar Anda betah berlama-lama.</p>
-      </div>
-    </section>
+const revealStyle = (index: number): React.CSSProperties =>
+  ({ '--reveal-delay': `${Math.min(index, 10) * 55}ms` }) as React.CSSProperties;
 
-    <section className="section container">
-      <div className="gallery-grid">
-        {TILES.map((tile) => (
-          <div
-            key={tile.label}
-            className={`gallery-tile ${tile.tall ? 'tall' : ''}`}
-            style={{ background: tile.gradient }}
-          >
-            <span className="big">{tile.emoji}</span>
-            <p>{tile.label}</p>
-          </div>
-        ))}
-      </div>
-      <p className="muted small center" style={{ marginTop: 18 }}>
-        Foto asli akan ditambahkan oleh tim dokumentasi. Untuk prototipe, galeri ditampilkan dengan ilustrasi bertema
-        café.
-      </p>
-    </section>
-  </PublicShell>
-);
+const Gallery: React.FC = () => {
+  useScrollReveal();
+
+  return (
+    <PublicShell active="/gallery">
+      <section className="page-hero">
+        <div className="container">
+          <span className="pill">Galeri</span>
+          <h1>Suasana yang ingin kami bagikan.</h1>
+          <p>Sudut café, hidangan, dan kamar hotel — semuanya dirancang agar Anda betah berlama-lama.</p>
+        </div>
+      </section>
+
+      <section className="section container">
+        <div className="gallery-grid">
+          {TILES.map((tile, index) => (
+            <div
+              key={tile.label}
+              className={`gallery-tile reveal${tile.tall ? ' tall' : ''}`}
+              data-reveal
+              style={{ background: tile.gradient, ...revealStyle(index) }}
+            >
+              <span className="big">{tile.emoji}</span>
+              <p>{tile.label}</p>
+            </div>
+          ))}
+        </div>
+        <p className="muted small center reveal" data-reveal style={{ marginTop: 18 }}>
+          Foto asli akan ditambahkan oleh tim dokumentasi. Untuk prototipe, galeri ditampilkan dengan ilustrasi bertema
+          café.
+        </p>
+      </section>
+    </PublicShell>
+  );
+};
 
 export default Gallery;

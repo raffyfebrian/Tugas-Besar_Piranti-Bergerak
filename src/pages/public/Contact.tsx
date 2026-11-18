@@ -3,6 +3,7 @@ import { callOutline, locationOutline, logoInstagram, logoWhatsapp, mailOutline,
 import React, { useState } from 'react';
 
 import { PublicShell } from '../../components/PublicShell';
+import { useScrollReveal } from '../../hooks/useScrollReveal';
 import { useApp } from '../../store/AppStore';
 
 const Contact: React.FC = () => {
@@ -11,6 +12,8 @@ const Contact: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+
+  useScrollReveal();
 
   const send = (event: React.FormEvent) => {
     event.preventDefault();
@@ -52,7 +55,7 @@ const Contact: React.FC = () => {
             gap: 24,
           }}
         >
-          <div className="panel">
+          <div className="panel reveal" data-reveal>
             <h2 className="panel-title">Informasi Café</h2>
             <p className="panel-sub">Kunjungi kami atau hubungi langsung.</p>
             <div className="contact-list" style={{ marginTop: 10 }}>
@@ -105,7 +108,12 @@ const Contact: React.FC = () => {
             </div>
           </div>
 
-          <form className="panel" onSubmit={send}>
+          <form
+            className="panel reveal"
+            data-reveal
+            style={{ '--reveal-delay': '80ms' } as React.CSSProperties}
+            onSubmit={send}
+          >
             <h2 className="panel-title">Kirim Pesan</h2>
             <p className="panel-sub">Kami membalas dalam 1×24 jam kerja.</p>
             <div className="stack" style={{ marginTop: 14 }}>
@@ -142,7 +150,7 @@ const Contact: React.FC = () => {
           </form>
         </div>
 
-        <div className="map-placeholder" style={{ marginTop: 24 }}>
+        <div className="map-placeholder reveal" data-reveal style={{ marginTop: 24 }}>
           <div>
             <div style={{ fontSize: '2.4rem' }}>📍</div>
             <p style={{ margin: '8px 0 0' }}>{state.settings.address}</p>

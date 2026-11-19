@@ -79,8 +79,10 @@ Perintah lain:
 ```bash
 npm run build       # build produksi ke dist/
 npm run preview     # pratinjau hasil build
-npm run test:unit   # unit test (Vitest)
-npm run lint        # ESLint + Prettier check
+npm test            # unit test (Vitest) + E2E (Playwright)
+npm run test:unit   # unit test saja (Vitest)
+npm run test:e2e    # E2E saja (Playwright, perlu npx playwright install chromium sekali)
+npm run lint        # ESLint + typecheck E2E + Prettier check
 npm run assets:brand # buat ulang ikon, splash, dan favicon Ngoffe ID
 ```
 
@@ -240,7 +242,16 @@ Showcase 3D beranda (`src/components/Showcase3D.tsx`) dibangun murni dengan CSS 
 - **Geser hapus** (`src/components/SwipeToDelete.tsx`): gesture pointer (sentuh & mouse) dengan ambang 72 px dan batas geser 120 px. Scroll vertikal membatalkan geseran, tombol/stepper/textarea tidak memicu gesture, dan background merah muda muncul saat item ditarik. Saat dilepas, baris beranimasi keluar; timer cadangan memastikan item tetap terhapus walau tab tidak aktif menahan animation frame.
 - **Undo** (`restoreCartLine` di `AppStore` + toast di `src/pages/guest/Cart.tsx`): baris yang dihapus disimpan sementara bersama indeks asalnya. Tombol Undo menyisipkannya kembali tepat di posisi semula beserta `qty` dan `note`; tombol ini sengaja tanpa `role: "cancel"` agar handler dipanggil langsung oleh Ionic. Toast otomatis hilang setelah 4 detik.
 - **FLIP reflow** (`src/hooks/useFlipRows.ts`): posisi setiap baris (`data-flip-key`) direkam sebelum state berubah, lalu setelah commit baris yang bergeser dianimasikan dari posisi lama ke posisi baru (320 ms, `cubic-bezier(0.22, 1, 0.36, 1)`). Berhenti otomatis saat *reduce motion* aktif.
-- **Pengujian**: `src/store/AppStore.test.tsx` mengunci perilaku `restoreCartLine` (indeks semula, qty/catatan utuh, tidak duplikat, indeks di-clamp), dan `src/hooks/useScrollReveal.test.tsx` menguji observer, *reduce motion*, serta cleanup.
+- **Pengujian**: `src/store/AppStore.test.tsx` mengunci perilaku `restoreCartLine` (indeks semula, qty/catatan utuh, tidak duplikat, indeks di-clamp), dan `src/hooks/useScrollReveal.test.tsx` menguji observer, *reduce motion*, serta cleanup. `src/store/AppStore.operations.test.tsx` menguji integrasi store: potong stok dari resep sekali saat masuk dapur, void/refund (stok dikembalikan sekali, nominal di-clamp, audit trail, tanpa refund), dan shift kasir (shift terbuka dipakai ulang, penutupan menghitung cash/QRIS serta mengabaikan pesanan batal/belum bayar).
+
+### E2E alur nyata
+
+`e2e/app.spec.ts` menggantikan template bawaan Ionic dengan dua skenario di `Mobile Chrome` (Pixel 7):
+
+- Situs publik merender beranda dan empat kartu menu unggulan.
+- Alur lengkap **tamu → kasir → dapur → tamu**: simulasi scan QR kamar, tambah Espresso, pilih cash, konfirmasi pembayaran, validasi kasir, mulai/selesaikan item di dapur, tandai siap, antar, lalu selesaikan pesanan. Status tamu dicek tiap tahap.
+
+Playwright menyalakan Vite development server otomatis (`webServer`) dengan `strictPort: 5173`. Jalankan `npx playwright install chromium` sekali pada mesin baru.
 
 ### Scroll-reveal halaman publik
 
